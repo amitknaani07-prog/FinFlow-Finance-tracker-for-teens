@@ -1,0 +1,420 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/lib/supabase";
+import { formatCurrency } from "@/lib/utils";
+import { ArrowUpRight, ArrowDownRight, Trophy, Plus, Search, Bell, Mic, Sparkles, Zap, Activity, Eye, EyeOff, Globe } from "lucide-react";
+import { motion } from "framer-motion";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import BrandLogo from "@/components/BrandLogo";
+
+
+export default function DashboardPage() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
+  const [stats, setStats] = useState({ income: 0, expenses: 0, balance: 0 });
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Interaction states
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [showScoreInfo, setShowScoreInfo] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [hideActivity, setHideActivity] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchData = async () => {
+      // Fetch Profile
+      const { data: userData } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      
+      // If the user has no profile, redirect to onboarding
+      if (!userData) {
+        router.push("/onboarding");
+        return;
+      }
+
+      setProfile(userData);
+
+      // Fetch Recent Transactions
+      const { data: txData } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false })
+        .limit(5);
+
+      if (txData) {
+        setTransactions(txData);
+        let inc = 0, exp = 0;
+        const { data: allTx } = await supabase.from("transactions").select("amount, type").eq("user_id", user.id);
+        allTx?.forEach(t => {
+          if (t.type === "income") inc += Number(t.amount);
+          if (t.type === "expense") exp += Number(t.amount);
+        });
+        setStats({ income: inc, expenses: exp, balance: inc - exp });
+      }
+
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <motion.div 
+          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} 
+          transition={{ repeat: Infinity, duration: 2 }}
+          className="w-16 h-16 rounded-full bg-accent/20 border border-accent/50 shadow-glow-green"
+        />
+      </div>
+    );
+  }
+
+  const score = profile?.money_score || 0;
+  const safeToSpend = Math.max(0, stats.balance - 150); // Holding $150 as a buffer
+
+  const containerVars = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.08 }
+    }
+  };
+  
+  const itemVars = {
+    hidden: { opacity: 0, scale: 0.95, y: 15 },
+    show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring" as const, stiffness: 350, damping: 25 } }
+  };
+
+  const filteredTransactions = transactions.filter(t => 
+    t.category.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (t.note && t.note.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    Math.abs(t.amount).toString().includes(searchQuery)
+  );
+
+  return (
+    <div className="p-4 pt-8 md:p-8 max-w-lg lg:max-w-6xl mx-auto pb-32">
+       {/* Top Nav (Glassmorphism Header) */}
+       <div className="flex justify-between items-center mb-8 relative z-50">
+          <div className="flex items-center gap-4">
+            <BrandLogo size="sm" showGlow={false} className="hidden md:block" />
+            <div className="flex items-center gap-4 cursor-pointer group" onClick={() => setShowScoreInfo(!showScoreInfo)}>
+             <div className="w-12 h-12 rounded-full bg-surfaceGlass backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg hover:shadow-glow-purple transition-all duration-300 group-hover:bg-purpleAccent/10 group-hover:border-purpleAccent/50">
+                <span className="font-bold text-lg text-white">{(profile?.name || "U")[0].toUpperCase()}</span>
+             </div>
+             <div>
+                <p className="text-[10px] text-purpleAccent uppercase tracking-[0.2em] font-black flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">Money Score <Trophy className="w-3 h-3"/></p>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <p className="text-white font-black text-xl leading-none tracking-tight">{score}</p>
+                  <span className="text-white/40 font-bold text-xs uppercase">Pts</span>
+                </div>
+             </div>
+             
+             {showScoreInfo && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  className="absolute top-16 left-0 w-56 bg-surfaceGlass/90 backdrop-blur-2xl border border-white/10 p-4 rounded-2xl shadow-[0_0_40px_rgba(179,136,255,0.15)] z-50 pointer-events-auto"
+                >
+                   <p className="text-xs text-white/50 font-bold uppercase tracking-wider mb-3">Earn Points</p>
+                   <ul className="text-xs text-white/80 space-y-2.5 font-medium">
+                     <li className="flex justify-between items-center"><span>Log Transaction</span><span className="text-accent font-bold">+2</span></li>
+                     <li className="flex justify-between items-center"><span>Hit Weekly Goal</span><span className="text-accent font-bold">+20</span></li>
+                   </ul>
+                   <Link href="/learn" className="mt-4 block w-full text-center text-[10px] font-black tracking-widest uppercase text-purpleAccent border border-purpleAccent/30 bg-purpleAccent/5 py-2.5 rounded-xl hover:bg-purpleAccent/10 transition-colors">Level Up</Link>
+                </motion.div>
+             )}
+          </div>
+          </div>
+          <div className="flex gap-2 relative">
+            <div className="relative">
+              <button onClick={() => setShowSearch(!showSearch)} className="w-11 h-11 rounded-full bg-surfaceGlass backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-all shadow-lg hover:shadow-glow-purple">
+                 <Search className="w-4 h-4"/>
+              </button>
+              
+              {showSearch && (
+                 <motion.div 
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    className="absolute top-14 right-0 w-[280px] bg-surfaceGlass/90 backdrop-blur-2xl border border-white/10 p-2 rounded-2xl shadow-[0_0_40px_rgba(179,136,255,0.15)] z-50 pointer-events-auto"
+                 >
+                    <input 
+                       type="text" 
+                       placeholder="Search activity..." 
+                       value={searchQuery}
+                       onChange={(e) => setSearchQuery(e.target.value)}
+                       className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purpleAccent transition-colors placeholder:text-white/30 font-medium tracking-wide" 
+                       autoFocus
+                    />
+                 </motion.div>
+              )}
+            </div>
+            <div className="relative">
+              <button onClick={() => setShowNotifs(!showNotifs)} className="w-11 h-11 rounded-full bg-surfaceGlass backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-all relative shadow-lg hover:shadow-glow-purple group">
+                 <Bell className="w-4 h-4 group-hover:rotate-12 transition-transform"/>
+                 <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-accent rounded-full shadow-glow-green"></span>
+              </button>
+              
+              {showNotifs && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  className="absolute top-14 right-0 w-64 bg-surfaceGlass/90 backdrop-blur-2xl border border-white/10 p-5 rounded-2xl shadow-[0_0_40px_rgba(179,136,255,0.15)] z-50 text-center pointer-events-auto"
+                >
+                   <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3 text-accent shadow-glow-green border border-accent/20">
+                      <Sparkles className="w-5 h-5"/>
+                   </div>
+                   <p className="text-sm font-bold text-white mb-1">Lookin' Good!</p>
+                   <p className="text-xs text-white/50 font-medium tracking-wide leading-relaxed">You're on track with your goals this week. Keep that momentum!</p>
+                </motion.div>
+              )}
+            </div>
+          </div>
+       </div>
+
+       {/* MODULAR BENTO GRID */}
+       <motion.div 
+         variants={containerVars} 
+         initial="hidden" 
+         animate="show" 
+         className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 lg:gap-5 auto-rows-auto"
+       >
+         
+         {/* 1. HERO CARD & SAFE TO SPEND METER (Double Height) */}
+         <motion.div 
+           variants={itemVars} 
+           className="col-span-1 md:col-span-2 lg:col-span-3 lg:row-span-2 relative p-6 md:p-8 rounded-[38px] overflow-hidden bg-gradient-to-b from-surface/40 to-background/60 backdrop-blur-3xl border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] group hover:border-accent/30 transition-all duration-700"
+         >
+            <div className="absolute top-[-20%] right-[-10%] w-[80%] h-[80%] bg-accent/10 rounded-full blur-[120px] pointer-events-none group-hover:bg-accent/20 group-hover:scale-110 transition-all duration-1000" />
+            <div className="absolute -inset-[1px] bg-gradient-to-br from-white/10 to-transparent rounded-[38px] -z-10 opacity-50" />
+            
+            <div className="relative z-10 flex flex-col h-full justify-between">
+               <div>
+                 <div className="flex justify-between items-center mb-6">
+                    <p className="text-white/60 text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2">
+                       <Activity className="w-4 h-4 text-accent drop-shadow-[0_0_8px_rgba(0,230,118,0.5)]" /> Total Balance
+                    </p>
+                    <div className="px-3 py-1 bg-white/5 text-[10px] font-black tracking-widest text-white/80 rounded-full border border-white/10">USD</div>
+                 </div>
+                 <h2 className="text-5xl md:text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/40 drop-shadow-sm">
+                   {formatCurrency(stats.balance)}
+                 </h2>
+               </div>
+
+               <div className="mt-8 flex flex-col gap-6">
+                 {/* Styled Safe-to-spend gauge */}
+                 <div className="bg-white/5 backdrop-blur-2xl p-6 rounded-[32px] border border-white/5 relative overflow-hidden group-hover:bg-white/10 transition-all duration-500">
+                    <div className="flex justify-between items-end mb-4">
+                       <div>
+                         <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-1">Safe to Spend</p>
+                         <p className="text-3xl font-black text-accent drop-shadow-[0_0_15px_rgba(0,230,118,0.4)]">{formatCurrency(safeToSpend)}</p>
+                       </div>
+                       <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center border border-accent/20">
+                         <Sparkles className="w-5 h-5 text-accent animate-pulse" />
+                       </div>
+                    </div>
+                    <div className="w-full h-2.5 bg-black/40 rounded-full overflow-hidden border border-white/5 relative">
+                       <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(100, (safeToSpend / (stats.balance || 1)) * 100)}%` }}
+                          transition={{ delay: 0.8, duration: 2, ease: [0.16, 1, 0.3, 1] }}
+                          className="absolute inset-y-0 left-0 bg-gradient-to-r from-accentDark via-accent to-white rounded-full shadow-[0_0_20px_rgba(0,230,118,0.5)]" 
+                       />
+                    </div>
+                 </div>
+                 
+                 <div className="flex gap-3">
+                   <Link href="/income" className="flex-1 flex items-center justify-center gap-2 py-4 bg-accent text-background font-black rounded-2xl transition-all hover:bg-white hover:shadow-glow-green text-sm tracking-wide">
+                     <ArrowDownRight className="w-4 h-4"/> Add Funds
+                   </Link>
+                   <Link href="/expenses" className="flex-1 flex items-center justify-center gap-2 py-4 bg-surfaceGlass backdrop-blur-md rounded-2xl text-white font-bold transition-all border border-white/10 hover:bg-white/10 hover:border-white/20 text-sm tracking-wide shadow-lg">
+                     <ArrowUpRight className="w-4 h-4 text-danger"/> Log Spent
+                   </Link>
+                 </div>
+               </div>
+            </div>
+         </motion.div>
+
+         {/* 2. AI RECEPTIONIST / INSIGHTS (Top Right) */}
+         <motion.div 
+           variants={itemVars} 
+           className="col-span-1 md:col-span-2 lg:col-span-3 relative p-6 md:p-8 rounded-[38px] overflow-hidden bg-gradient-to-br from-[#1a1528]/60 to-background/40 backdrop-blur-3xl border border-white/5 group shadow-2xl hover:shadow-glow-purple hover:border-purpleAccent/30 transition-all duration-700 flex flex-col justify-between min-h-[12rem]"
+         >
+            <div className="absolute bottom-[-30%] left-[-10%] w-[70%] h-[70%] bg-purpleAccent/15 rounded-full blur-[100px] pointer-events-none group-hover:scale-125 transition-transform duration-1000" />
+            
+            <div className="relative z-10">
+               <div className="flex justify-between items-start mb-4">
+                 <p className="text-white/60 text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-purpleAccent" /> AI Insights
+                 </p>
+                 <button 
+                   onClick={() => setIsRecording(!isRecording)} 
+                   className={`w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-md border transition-all duration-300 ${isRecording ? 'bg-danger/20 text-danger border-danger/50 shadow-[0_0_30px_rgba(255,59,48,0.4)] scale-110' : 'bg-surfaceGlass border-white/10 text-purpleAccent hover:bg-purpleAccent/20 hover:text-white shadow-lg'}`}
+                 >
+                    <Mic className={`w-6 h-6 ${isRecording ? 'animate-pulse' : ''}`} />
+                 </button>
+               </div>
+               
+               <div className="mt-4 pr-16">
+                 <p className="text-lg md:text-xl font-bold text-white/90 leading-tight tracking-wide">
+                    {isRecording ? (
+                      <span className="text-danger drop-shadow-[0_0_8px_rgba(255,59,48,0.5)]">Listening to your receipt...</span>
+                    ) : (
+                      "You're spending 15% less on food this week. Keep that momentum up! 🚀"
+                    )}
+                 </p>
+               </div>
+            </div>
+         </motion.div>
+
+         {/* 3. LEADERBOARDS & COMPETITION */}
+         <motion.div 
+           variants={itemVars} 
+           onClick={() => router.push('/leaderboard')}
+           className="col-span-1 md:col-span-2 lg:col-span-2 p-6 rounded-[38px] bg-white/5 backdrop-blur-3xl border border-white/5 hover:border-white/20 transition-all duration-500 group cursor-pointer flex flex-col justify-between relative overflow-hidden min-h-[14rem] shadow-xl"
+         >
+            <div className="absolute top-0 right-0 w-[60%] h-[60%] bg-accent/5 rounded-full blur-[60px] pointer-events-none group-hover:bg-accent/15 transition-all duration-1000" />
+            
+            <div className="flex justify-between items-center mb-6 z-10 relative">
+               <p className="text-white/60 text-xs font-black uppercase tracking-[0.2em]">Leaderboard</p>
+               <Trophy className="w-5 h-5 text-accent/60 drop-shadow-[0_0_8px_rgba(0,230,118,0.3)]" />
+            </div>
+            {/* Visual Podium */}
+            <div className="flex items-end justify-center gap-3 mt-auto h-28 z-10 relative">
+               <div className="w-1/3 flex flex-col items-center">
+                 <div className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">#2</div>
+                 <div className="w-full bg-surface border border-white/5 rounded-t-2xl h-[55%] flex items-start justify-center pt-3 shadow-inner">
+                   <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 text-[9px] flex items-center justify-center font-black text-white/50 tracking-wider">AJ</div>
+                 </div>
+               </div>
+               <div className="w-1/3 flex flex-col items-center group-hover:-translate-y-2 transition-transform duration-500">
+                 <div className="text-accent text-[11px] font-black uppercase tracking-widest mb-1 drop-shadow-[0_0_8px_rgba(0,230,118,0.8)]">#1</div>
+                 <div className="w-full bg-gradient-to-t from-background to-accent/10 border-t-2 border-accent/40 rounded-t-2xl h-[95%] flex items-start justify-center pt-3 shadow-[0_-5px_20px_rgba(0,230,118,0.1)]">
+                   <div className="w-10 h-10 rounded-full bg-accent/20 border-2 border-accent/50 text-[11px] flex items-center justify-center font-black text-accent shadow-glow-green tracking-wider">ME</div>
+                 </div>
+               </div>
+               <div className="w-1/3 flex flex-col items-center">
+                 <div className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">#3</div>
+                 <div className="w-full bg-surface border border-white/5 rounded-t-2xl h-[40%] flex items-start justify-center pt-3 shadow-inner">
+                   <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 text-[9px] flex items-center justify-center font-black text-white/50 tracking-wider">SK</div>
+                 </div>
+               </div>
+            </div>
+         </motion.div>
+
+         {/* 4. GOALS TRACKER */}
+         <motion.div 
+           variants={itemVars} 
+           onClick={() => router.push('/goals')}
+           className="col-span-1 md:col-span-2 lg:col-span-1 p-6 rounded-[38px] bg-white/5 backdrop-blur-3xl border border-white/5 hover:border-purpleAccent/30 transition-all duration-500 relative overflow-hidden group cursor-pointer min-h-[14rem] shadow-xl"
+         >
+            <div className="absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t from-purpleAccent/10 to-transparent pointer-events-none opacity-40 group-hover:opacity-80 transition-opacity duration-700" />
+            <div className="flex justify-between items-start mb-4 z-10 relative">
+               <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-purpleAccent mb-1">Track</p>
+                  <h3 className="text-white font-bold text-lg tracking-wide">Goals</h3>
+               </div>
+               <div className="w-10 h-10 rounded-full bg-purpleAccent/10 border border-purpleAccent/20 flex items-center justify-center text-purpleAccent group-hover:scale-110 group-hover:bg-purpleAccent/20 transition-all shadow-glow-purple">
+                  <Plus className="w-4 h-4"/>
+               </div>
+            </div>
+            
+            {/* Visual Mini Chart */}
+            <div className="absolute bottom-0 left-0 right-0 h-20 w-full flex items-end justify-between px-6 pb-6 z-10">
+               {[30, 50, 40, 75, 60, 95].map((h, i) => (
+                 <motion.div 
+                    initial={{ height: 0 }}
+                    animate={{ height: `${h}%` }}
+                    transition={{ delay: 0.5 + (i * 0.1), duration: 0.6, type: "spring" }}
+                    key={i} 
+                    className="w-2 md:w-3 bg-gradient-to-t from-purpleAccent to-white/90 rounded-t-full shadow-glow-purple opacity-70 group-hover:opacity-100 transition-opacity" 
+                 />
+               ))}
+            </div>
+         </motion.div>
+
+         {/* 5. RECENT ACTIVITY & SINGULARITY ACTION */}
+         <motion.div variants={itemVars} className="col-span-1 md:col-span-4 lg:col-span-6 p-6 md:p-10 rounded-[38px] bg-white/[0.03] backdrop-blur-[40px] border border-white/5 mt-2 lg:mt-4 shadow-[0_30px_60px_rgba(0,0,0,0.6)] relative overflow-hidden">
+            <div className="absolute top-[-20%] left-[-10%] w-[40%] h-[100%] bg-accent/5 rounded-full blur-[120px] pointer-events-none" />
+           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+             <div>
+               <p className="text-white/50 text-[10px] font-black uppercase tracking-[0.2em] mb-1.5">Action Center</p>
+               <h3 className="text-white font-black text-2xl md:text-3xl tracking-tight leading-none">Your Moves</h3>
+             </div>
+             <div className="flex items-center gap-3">
+               {/* Singularity Scraper Mock Button / Webhooks Trigger */}
+               <button onClick={() => alert("World state synchronized! (Action dispatched)")} className="flex items-center gap-2 px-5 py-3 bg-white text-background rounded-full font-black text-[11px] uppercase tracking-widest hover:scale-105 hover:bg-white/90 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+                  <Globe className="w-4 h-4" /> Sync World
+               </button>
+               <button onClick={() => setHideActivity(!hideActivity)} className="w-12 h-12 rounded-full bg-surfaceGlass backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all shadow-lg hover:border-white/20">
+                 {hideActivity ? <EyeOff className="w-4 h-4 text-white/50" /> : <Eye className="w-4 h-4 text-white/50" />}
+               </button>
+             </div>
+           </div>
+           
+           <div className="space-y-4">
+             {hideActivity ? (
+                <div className="text-center py-12 border border-white/5 rounded-3xl bg-black/20 backdrop-blur-md">
+                  <EyeOff className="w-8 h-8 text-white/20 mb-3 mx-auto" />
+                  <p className="text-sm font-bold tracking-wide text-white/50">History Hidden for Privacy</p>
+                </div>
+             ) : filteredTransactions.length === 0 ? (
+               <div className="text-center py-12 border border-white/5 rounded-3xl bg-black/20 backdrop-blur-md">
+                 <p className="text-base text-white/70 font-bold mb-1 tracking-wide">{searchQuery ? 'No results found.' : "No money moves yet."}</p>
+                 {searchQuery && <p className="text-xs text-white/40 font-medium">Try a different search term.</p>}
+               </div>
+             ) : (
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {filteredTransactions.slice(0, 4).map((tx, idx) => (
+                   <motion.div 
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.1 * idx, type: "spring", stiffness: 400, damping: 25 }}
+                      key={tx.id} 
+                      className="flex justify-between items-center p-5 bg-black/30 backdrop-blur-md border border-white/5 rounded-3xl hover:bg-white/5 hover:border-white/10 transition-all cursor-pointer group hover:-translate-y-1"
+                   >
+                      <div className="flex items-center gap-5">
+                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${tx.type === 'income' ? 'bg-accent/10 text-accent border border-accent/20' : 'bg-white/5 text-white/60 border border-white/10'}`}>
+                            {tx.type === 'income' ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+                         </div>
+                         <div>
+                           <p className="text-base font-black text-white tracking-wide">{tx.category}</p>
+                           <p className="text-[10px] text-white/40 font-bold tracking-widest uppercase mt-1">
+                             {new Date(tx.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                           </p>
+                         </div>
+                      </div>
+                      <p className={`font-black text-xl tracking-tight ${tx.type === 'income' ? 'text-accent drop-shadow-[0_0_12px_rgba(0,230,118,0.4)]' : 'text-white'}`}>
+                        {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                      </p>
+                   </motion.div>
+                 ))}
+               </div>
+             )}
+             
+             {!hideActivity && filteredTransactions.length > 0 && (
+               <Link href="/transactions" className="mt-8 flex items-center justify-center w-full py-4 rounded-full border border-white/5 bg-transparent hover:bg-white/5 text-white/50 hover:text-white transition-colors text-[11px] font-black uppercase tracking-widest shadow-inner">
+                 View Full Ledger
+               </Link>
+             )}
+           </div>
+         </motion.div>
+
+       </motion.div>
+    </div>
+  );
+}
