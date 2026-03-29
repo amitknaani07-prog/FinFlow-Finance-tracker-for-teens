@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, PlusCircle, PieChart, Target, Globe, BarChart3 } from "lucide-react";
+import { Home, PlusCircle, PieChart, Target, Globe, BarChart3, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -9,15 +9,15 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   // Hide nav on auth and onboarding
-  if (pathname === "/auth" || pathname === "/onboarding") return null;
+  if (pathname === "/" || pathname === "/auth" || pathname === "/onboarding") return null;
 
   const navItems = [
     { label: "Home", icon: Home, href: "/dashboard" },
     { label: "Income", icon: PlusCircle, href: "/income" },
     { label: "Spend", icon: PieChart, href: "/expenses" },
     { label: "Goals", icon: Target, href: "/goals" },
+    { label: "Learn", icon: BookOpen, href: "/learn" },
     { label: "Market", icon: Globe, href: "/market" },
-    { label: "Summary", icon: BarChart3, href: "/summary" },
   ];
 
   return (

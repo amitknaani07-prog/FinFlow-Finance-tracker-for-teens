@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
-import { LogOut, Save, Moon, User as UserIcon } from "lucide-react";
+import { LogOut, Save, Moon, User as UserIcon, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
@@ -46,6 +46,15 @@ export default function SettingsPage() {
 
   return (
     <div className="p-4 pt-8 md:p-8 max-w-2xl mx-auto space-y-8 pb-32">
+      
+      {/* Back Button */}
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors group"
+      >
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+        Back
+      </button>
       
       {/* Header */}
       <div>

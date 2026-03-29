@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/utils";
-import { ArrowUpRight, ArrowDownRight, Trophy, Plus, Search, Bell, Mic, Sparkles, Zap, Activity, Eye, EyeOff, Globe, LineChart, BarChart3, TrendingUp, DollarSign } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Trophy, Plus, Search, Bell, Mic, Sparkles, Zap, Activity, Eye, EyeOff, Globe, LineChart, BarChart3, TrendingUp, DollarSign, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -193,7 +193,7 @@ export default function DashboardPage() {
        {/* Top Nav (Glassmorphism Header) */}
        <div className="flex justify-between items-center mb-8 relative z-50">
           <div className="flex items-center gap-4">
-            <BrandLogo size="sm" showGlow={false} className="hidden md:block" />
+            <BrandLogo size="sm" showGlow={false} href="/" className="hidden md:block" />
             <div className="flex items-center gap-4 cursor-pointer group" onClick={() => setShowScoreInfo(!showScoreInfo)}>
              <div className="w-12 h-12 rounded-full bg-surfaceGlass backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg hover:shadow-glow-purple transition-all duration-300 group-hover:bg-purpleAccent/10 group-hover:border-purpleAccent/50">
                 <span className="font-bold text-lg text-white">{(profile?.name || "U")[0].toUpperCase()}</span>
@@ -492,7 +492,37 @@ export default function DashboardPage() {
             </div>
          </motion.div>
 
-         {/* 4. GOALS TRACKER */}
+         {/* 4. LEARN / eLearning Bento Widget */}
+         <motion.div 
+           variants={itemVars} 
+           onClick={() => router.push('/learn')}
+           className="col-span-1 md:col-span-6 lg:col-span-4 p-6 rounded-[38px] bg-gradient-to-br from-purpleAccent/10 to-background/40 backdrop-blur-3xl border border-purpleAccent/10 hover:border-purpleAccent/40 transition-all duration-500 group cursor-pointer flex flex-col justify-between relative overflow-hidden min-h-[14rem] shadow-xl"
+         >
+            <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-purpleAccent/20 rounded-full blur-[80px] pointer-events-none group-hover:scale-125 transition-transform duration-1000" />
+            <div className="flex justify-between items-start z-10 relative">
+               <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-purpleAccent mb-1">eLearning</p>
+                  <h3 className="text-white font-bold text-lg tracking-wide">Financial IQ</h3>
+               </div>
+               <div className="w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md border transition-all duration-300 bg-purpleAccent/10 border-purpleAccent/20 text-purpleAccent group-hover:bg-purpleAccent/30 group-hover:scale-110 shadow-glow-purple">
+                  <BookOpen className="w-5 h-5" />
+               </div>
+            </div>
+            {/* Mini lesson preview list */}
+            <div className="mt-4 space-y-2 z-10 relative">
+               {["Compound Interest", "50/30/20 Rule", "Credit vs Debit"].map((title, i) => (
+                 <div key={i} className="flex items-center gap-2.5 text-xs text-white/60 group-hover:text-white/80 transition-colors">
+                   <div className="w-1.5 h-1.5 rounded-full bg-purpleAccent/60 shadow-[0_0_6px_rgba(179,136,255,0.8)]" />
+                   {title}
+                 </div>
+               ))}
+            </div>
+            <div className="mt-4 flex items-center gap-2 z-10 relative">
+               <span className="text-[10px] font-black uppercase tracking-[0.15em] text-purpleAccent/70 group-hover:text-purpleAccent transition-colors">Start Learning →</span>
+            </div>
+         </motion.div>
+
+         {/* 5. GOALS TRACKER */}
          <motion.div 
            variants={itemVars} 
            onClick={() => router.push('/goals')}
