@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, CheckCircle2, Target, Sparkles } from "lucide-react";
+import { Plus, CheckCircle2, Target, Sparkles, ArrowLeft } from "lucide-react";
 import { awardPoints } from "@/lib/points";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCurrency } from "@/components/CurrencyProvider";
+import { useRouter } from "next/navigation";
 
 const INCOME_CATEGORIES = [
   "Part-time job",
@@ -35,6 +36,7 @@ type GoalDistribution = {
 export default function IncomePage() {
   const { user } = useAuth();
   const { currency, convert, rates } = useCurrency();
+  const router = useRouter();
   const [incomes, setIncomes] = useState<any[]>([]);
   const [monthlyTotal, setMonthlyTotal] = useState(0);
 
@@ -170,6 +172,15 @@ export default function IncomePage() {
 
   return (
     <div className="p-4 pt-8 md:p-8 max-w-2xl mx-auto space-y-8 pb-24">
+
+      {/* Back Button */}
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors group"
+      >
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+        Back
+      </button>
 
       {/* Header */}
       <div>

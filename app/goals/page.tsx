@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Target, CheckCircle2, Trophy, RotateCcw, Trash2 } from "lucide-react";
+import { Plus, Target, CheckCircle2, Trophy, RotateCcw, Trash2, ArrowLeft } from "lucide-react";
 import { awardPoints } from "@/lib/points";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 export default function GoalsPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [goals, setGoals] = useState<any[]>([]);
 
   // Form State
@@ -146,6 +148,15 @@ export default function GoalsPage() {
 
   return (
     <div className="p-4 pt-8 md:p-8 max-w-2xl mx-auto space-y-8 pb-32">
+
+      {/* Back Button */}
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors group"
+      >
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+        Back
+      </button>
 
       {/* Header */}
       <div className="flex justify-between items-end">

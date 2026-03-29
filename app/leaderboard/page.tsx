@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
-import { Trophy, Medal, Star, Flame } from "lucide-react";
+import { Trophy, Medal, Star, Flame, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function LeaderboardPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +41,15 @@ export default function LeaderboardPage() {
 
   return (
     <div className="p-4 pt-8 md:p-8 max-w-2xl mx-auto space-y-8 pb-32">
+      
+      {/* Back Button */}
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors group"
+      >
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+        Back
+      </button>
       <div className="flex flex-col items-center justify-center text-center space-y-4 mb-12">
         <div className="w-20 h-20 bg-accent/10 border border-accent/30 rounded-3xl flex items-center justify-center shadow-glow-green">
           <Trophy className="w-10 h-10 text-accent" />
@@ -94,11 +104,6 @@ export default function LeaderboardPage() {
         })}
       </div>
 
-      <div className="mt-12 text-center">
-         <Link href="/dashboard" className="text-sm font-bold text-white/50 hover:text-white transition-colors border border-white/10 px-6 py-3 rounded-full hover:bg-white/5">
-           Back to Dashboard
-         </Link>
-      </div>
     </div>
   );
 }

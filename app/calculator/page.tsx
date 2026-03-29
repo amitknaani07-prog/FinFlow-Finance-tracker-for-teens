@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, TrendingUp, Zap, DollarSign, Calendar, Percent } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useCurrency } from "@/components/CurrencyProvider";
@@ -18,6 +19,7 @@ import {
 } from "recharts";
 
 export default function CalculatorPage() {
+  const router = useRouter();
   const { currency, convert } = useCurrency();
   const [principal, setPrincipal] = useState(1000);
   const [monthlyContribution, setMonthlyContribution] = useState(100);
@@ -121,21 +123,22 @@ export default function CalculatorPage() {
 
   return (
     <div className="p-4 pt-8 md:p-8 max-w-lg lg:max-w-5xl mx-auto pb-32 min-h-screen">
+      
+      {/* Back Button */}
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors group mb-8"
+      >
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+        Back
+      </button>
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-10">
-        <Link
-          href="/dashboard"
-          className="w-12 h-12 rounded-full bg-surfaceGlass border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors shadow-lg group"
-        >
-          <ArrowLeft className="w-5 h-5 text-white/70 group-hover:text-white group-hover:-translate-x-1 transition-transform" />
-        </Link>
-        <div className="text-center">
-          <h1 className="text-2xl font-black text-white tracking-widest uppercase">Growth Engine</h1>
-          <p className="text-xs text-white/50 font-bold tracking-[0.2em] mt-1 flex justify-center items-center gap-2">
-            <Zap className="w-3 h-3 text-purpleAccent" /> Compound Interest Calculator
-          </p>
-        </div>
-        <div className="w-12 h-12" />
+      <div className="text-center mb-10">
+        <h1 className="text-3xl font-black text-white tracking-widest uppercase">Growth Engine</h1>
+        <p className="text-xs text-white/50 font-bold tracking-[0.2em] mt-1 flex justify-center items-center gap-2">
+          <Zap className="w-3 h-3 text-purpleAccent" /> Compound Interest Calculator
+        </p>
       </div>
 
       {/* Stats Summary Row */}

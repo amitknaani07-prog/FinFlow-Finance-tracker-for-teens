@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/utils";
-import { Minus, CheckCircle2 } from "lucide-react";
+import { Minus, CheckCircle2, ArrowLeft } from "lucide-react";
 import { awardPoints } from "@/lib/points";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { useCurrency } from "@/components/CurrencyProvider";
+import { useRouter } from "next/navigation";
 
 const EXPENSE_CATEGORIES = [
   "Food & drinks",
@@ -32,6 +33,7 @@ const INPUT_CURRENCIES = [
 export default function ExpensesPage() {
   const { user } = useAuth();
   const { currency, convert, rates } = useCurrency();
+  const router = useRouter();
   const [expenses, setExpenses] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   
@@ -122,6 +124,15 @@ export default function ExpensesPage() {
   return (
     <div className="p-4 pt-8 md:p-8 max-w-2xl mx-auto space-y-8 pb-24">
       
+      {/* Back Button */}
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors group"
+      >
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+        Back
+      </button>
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-white">Expenses</h1>
