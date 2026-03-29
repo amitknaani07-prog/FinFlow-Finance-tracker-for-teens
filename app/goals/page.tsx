@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Target, CheckCircle2, Trophy, RotateCcw } from "lucide-react";
+import { Plus, Target, CheckCircle2, Trophy, RotateCcw, Trash2 } from "lucide-react";
 import { awardPoints } from "@/lib/points";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -117,6 +117,24 @@ export default function GoalsPage() {
 
     if (!error) {
       setSuccessMsg(`${goal.emoji} ${goal.name} reset! Shoot for it again!`);
+      setTimeout(() => setSuccessMsg(""), 5000);
+      fetchGoals();
+    } else {
+      setErrorMsg(error.message);
+      setTimeout(() => setErrorMsg(""), 5000);
+    }
+    setLoading(false);
+  };
+
+  const handleDeleteGoal = async (goal: any) => {
+    setLoading(true);
+    const { error } = await supabase
+      .from("goals")
+      .delete()
+      .eq("id", goal.id);
+
+    if (!error) {
+      setSuccessMsg(`${goal.emoji} ${goal.name} deleted!`);
       setTimeout(() => setSuccessMsg(""), 5000);
       fetchGoals();
     } else {
@@ -279,14 +297,24 @@ export default function GoalsPage() {
               {/* Actions */}
               <div className="mt-6 border-t border-white/5 pt-4">
                 {isComplete ? (
-                  // Reset completed goal
-                  <button
-                    onClick={() => handleResetGoal(goal)}
-                    disabled={loading}
-                    className="w-full py-3 rounded-xl border border-white/10 text-white/60 text-sm font-semibold hover:bg-white/5 transition-colors flex items-center justify-center gap-2 hover:text-white"
-                  >
-                    <RotateCcw className="w-4 h-4" /> Reset & Go Again
-                  </button>
+                  // Reset or delete completed goal
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleResetGoal(goal)}
+                      disabled={loading}
+                      className="flex-1 py-3 rounded-xl border border-white/10 text-white/60 text-sm font-semibold hover:bg-white/5 transition-colors flex items-center justify-center gap-2 hover:text-white"
+                    >
+                      <RotateCcw className="w-4 h-4" /> Reset & Go Again
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGoal(goal)}
+                      disabled={loading}
+                      title="Delete completed goal"
+                      className="py-3 px-4 rounded-xl border border-red-500/20 text-red-400 text-sm font-semibold hover:bg-red-500/10 transition-colors flex items-center justify-center hover:text-red-300"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 ) : contributeGoalId === goal.id ? (
                   <form onSubmit={(e) => handleContribute(e, goal)} className="flex gap-2">
                     <input

@@ -20,6 +20,8 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<any>(null);
   const [stats, setStats] = useState({ income: 0, expenses: 0, balance: 0 });
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [nextNwMilestone, setNextNwMilestone] = useState(100);
   const [loading, setLoading] = useState(true);
   
   const { currency, setCurrency, convert } = useCurrency();
@@ -60,6 +62,18 @@ export default function DashboardPage() {
         .order("date", { ascending: false })
         .limit(5);
 
+      // Fetch Notifications
+      const { data: notifData } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      
+      if (notifData) {
+        setNotifications(notifData);
+      }
+
       if (txData) {
         setTransactions(txData);
         let inc = 0, exp = 0;
@@ -75,10 +89,28 @@ export default function DashboardPage() {
         const currentMilestone = Number(localStorage.getItem(`nw-milestone-${user.id}`) || "0");
         const nextMilestone = currentMilestone === 0 ? 100 : currentMilestone * 2; // 100, 200, 400, 800...
         
+        setNextNwMilestone(nextMilestone);
+
         if (netWorth >= nextMilestone) {
-           awardPoints(user.id, 50).then(() => {
+           awardPoints(user.id, 50).then(async () => {
+              const newTarget = nextMilestone * 2;
               localStorage.setItem(`nw-milestone-${user.id}`, nextMilestone.toString());
               setMilestoneCelebration(nextMilestone);
+              setNextNwMilestone(newTarget);
+              
+              // Insert notification
+              const newNotif = {
+                user_id: user.id,
+                type: 'milestone',
+                title: 'Net Worth Milestone! 🏆',
+                message: `You hit ${formatCurrency(nextMilestone)}! +50 Pts.`,
+                read: false
+              };
+              const { data: inserted } = await supabase.from('notifications').insert(newNotif).select().single();
+              if (inserted) {
+                setNotifications(prev => [inserted, ...prev]);
+              }
+
               setTimeout(() => setMilestoneCelebration(null), 8000);
            });
         }
@@ -104,6 +136,18 @@ export default function DashboardPage() {
 
   const score = profile?.money_score || 0;
   const safeToSpend = Math.max(0, stats.balance - 150); // Holding $150 as a buffer
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const handleOpenNotifications = async () => {
+    setShowNotifs(!showNotifs);
+    if (!showNotifs && unreadCount > 0) {
+      // Mark all as read in state
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      // Mark all as read in DB
+      await supabase.from("notifications").update({ read: true }).eq("user_id", user?.id).eq("read", false);
+    }
+  };
 
   const containerVars = {
     hidden: { opacity: 0 },
@@ -216,22 +260,41 @@ export default function DashboardPage() {
               )}
             </div>
             <div className="relative">
-              <button onClick={() => setShowNotifs(!showNotifs)} className="w-11 h-11 rounded-full bg-surfaceGlass backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-all relative shadow-lg hover:shadow-glow-purple group">
+              <button onClick={handleOpenNotifications} className="w-11 h-11 rounded-full bg-surfaceGlass backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-all relative shadow-lg hover:shadow-glow-purple group">
                  <Bell className="w-4 h-4 group-hover:rotate-12 transition-transform"/>
-                 <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-accent rounded-full shadow-glow-green"></span>
+                 {unreadCount > 0 && <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-accent rounded-full shadow-glow-green"></span>}
               </button>
               
               {showNotifs && (
                 <motion.div 
                   initial={{ opacity: 0, y: -10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className="absolute top-14 right-0 w-64 bg-surfaceGlass/90 backdrop-blur-2xl border border-white/10 p-5 rounded-2xl shadow-[0_0_40px_rgba(179,136,255,0.15)] z-50 text-center pointer-events-auto"
+                  className="absolute top-14 right-0 w-[300px] max-h-[400px] overflow-y-auto bg-surfaceGlass/90 backdrop-blur-2xl border border-white/10 p-5 rounded-2xl shadow-[0_0_40px_rgba(179,136,255,0.15)] z-50 pointer-events-auto custom-scrollbar"
                 >
-                   <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3 text-accent shadow-glow-green border border-accent/20">
-                      <Sparkles className="w-5 h-5"/>
-                   </div>
-                   <p className="text-sm font-bold text-white mb-1">Lookin' Good!</p>
-                   <p className="text-xs text-white/50 font-medium tracking-wide leading-relaxed">You're on track with your goals this week. Keep that momentum!</p>
+                   <h3 className="text-sm font-bold text-white mb-4 border-b border-white/10 pb-2">Notifications</h3>
+                   
+                   {notifications.length === 0 ? (
+                     <div className="text-center py-6">
+                       <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-3 text-white/40 border border-white/5">
+                          <Bell className="w-5 h-5"/>
+                       </div>
+                       <p className="text-xs text-white/50 font-medium tracking-wide">You're all caught up!</p>
+                     </div>
+                   ) : (
+                     <div className="space-y-3">
+                       {notifications.map(notif => (
+                         <div key={notif.id} className={`p-3 rounded-xl border ${notif.read ? 'bg-white/5 border-white/5' : 'bg-accent/10 border-accent/30'} flex gap-3 text-left`}>
+                            <div className="mt-1 flex-shrink-0">
+                               {notif.type === 'milestone' ? <Trophy className="w-4 h-4 text-accent drop-shadow-[0_0_5px_rgba(0,230,118,0.5)]" /> : <Sparkles className="w-4 h-4 text-purpleAccent" />}
+                            </div>
+                            <div>
+                               <p className="text-sm font-bold text-white mb-0.5">{notif.title}</p>
+                               <p className="text-xs text-white/60 leading-relaxed">{notif.message}</p>
+                            </div>
+                         </div>
+                       ))}
+                     </div>
+                   )}
                 </motion.div>
               )}
             </div>
@@ -278,6 +341,22 @@ export default function DashboardPage() {
                  <h2 className="text-5xl md:text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/40 drop-shadow-sm">
                    {formatCurrency(convert(stats.balance), currency)}
                  </h2>
+
+                 {/* Net Worth Milestone Progress bar */}
+                 <div className="mt-4 bg-white/5 border border-white/10 p-4 rounded-2xl flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-[0.15em] text-white/50">
+                       <span>Next Milestone</span>
+                       <span className="text-white/80">{formatCurrency(convert(nextNwMilestone), currency)}</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5 relative">
+                       <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(100, (stats.balance / nextNwMilestone) * 100)}%` }}
+                          transition={{ delay: 0.4, duration: 1.5, ease: "easeOut" }}
+                          className="absolute inset-y-0 left-0 bg-gradient-to-r from-accentDark to-accent rounded-full shadow-[0_0_10px_rgba(0,230,118,0.5)]" 
+                       />
+                    </div>
+                 </div>
                </div>
 
                <div className="mt-8 flex flex-col gap-6">
