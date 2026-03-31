@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, PlusCircle, PieChart, Target, Globe, BarChart3, BookOpen } from "lucide-react";
+import { Home, PlusCircle, PieChart, Target, Globe, BarChart3, BookOpen, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,7 @@ export default function BottomNav() {
     { label: "Spend", icon: PieChart, href: "/expenses" },
     { label: "Goals", icon: Target, href: "/goals" },
     { label: "Learn", icon: BookOpen, href: "/learn" },
-    { label: "Market", icon: Globe, href: "/market" },
+    { label: "Settings", icon: Settings, href: "/settings" },
   ];
 
   return (

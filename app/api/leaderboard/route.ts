@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { rateLimit } from '@/lib/rate-limit';
 
-export async function GET() {
+export async function GET(request: Request) {
+  // Rate Limiting: 10 requests per minute
+  const rateLimitCheck = rateLimit(10, 60000);
+  const rateLimitResponse = await rateLimitCheck(request as any);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     // Fetch top 10 users by money_score
     const { data: leaderboard, error } = await supabase

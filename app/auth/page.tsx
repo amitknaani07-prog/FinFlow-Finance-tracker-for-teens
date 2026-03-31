@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import BrandLogo from "@/components/BrandLogo";
+import { Chrome } from "lucide-react";
 
 
 export default function AuthPage() {
@@ -13,6 +14,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const router = useRouter();
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -44,6 +46,35 @@ export default function AuthPage() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    setError(null);
+
+    // Try different redirect URL approaches
+    const redirectUrl = typeof window !== 'undefined' 
+      ? `${window.location.origin}/auth/callback`
+      : 'http://localhost:3004/auth/callback';
+
+    console.log('Redirect URL being used:', redirectUrl);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
+
+    if (error) {
+      console.error('OAuth Error:', error);
+      setError(error.message);
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md bg-surface p-8 rounded-3xl shadow-xl border border-white/5">
@@ -52,6 +83,31 @@ export default function AuthPage() {
              <BrandLogo size="lg" />
           </div>
           <p className="text-textMuted mt-2">Your money. Your rules.</p>
+        </div>
+
+        {/* Google Sign In Button */}
+        <button
+          onClick={handleGoogleSignIn}
+          disabled={googleLoading}
+          className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-800 font-semibold py-3 rounded-xl transition-colors mb-6 disabled:opacity-50"
+        >
+          {googleLoading ? (
+            <span>Connecting...</span>
+          ) : (
+            <>
+              <Chrome className="w-5 h-5" />
+              Continue with Google
+            </>
+          )}
+        </button>
+
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-white/10"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 bg-surface text-textMuted">or continue with email</span>
+          </div>
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">

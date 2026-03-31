@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/rate-limit';
 
-export async function GET() {
+export async function GET(_request: Request) {
+  // Rate Limiting: 5 requests per minute (scraping is heavy)
+  const rateLimitCheck = rateLimit(5, 60000);
+  const rateLimitResponse = await rateLimitCheck(_request as any);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     // In production, this would call your deployed Modal webhook URL.
     // Set MODAL_SINGULARITY_ENDPOINT in your .env.local after running `modal deploy modal/singularity_scraper.py`

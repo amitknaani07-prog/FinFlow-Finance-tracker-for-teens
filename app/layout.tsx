@@ -4,7 +4,9 @@ import "./globals.css";
 
 import { AuthProvider } from "@/components/AuthProvider";
 import { CurrencyProvider } from "@/components/CurrencyProvider";
+import { NavigationProvider } from "@/components/NavigationProvider";
 import BottomNav from "@/components/BottomNav";
+import SidebarWrapper from "@/components/SidebarWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,8 +25,11 @@ export default function RootLayout({
       <body className={`${inter.className} pb-20 md:pb-0`}>
         <CurrencyProvider>
           <AuthProvider>
-            {children}
-            <BottomNav />
+            <NavigationProvider>
+              <SidebarWrapper />
+              {children}
+              <BottomNav />
+            </NavigationProvider>
           </AuthProvider>
         </CurrencyProvider>
       </body>

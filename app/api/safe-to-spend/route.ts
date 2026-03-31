@@ -1,14 +1,28 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { safeToSpendQuerySchema } from '@/lib/validators';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET(request: Request) {
+  // Rate Limiting: 20 requests per minute
+  const rateLimitCheck = rateLimit(20, 60000);
+  const rateLimitResponse = await rateLimitCheck(request as any);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    // Strict Input Validation
+    const validation = safeToSpendQuerySchema.safeParse(userId);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Validation Failed', details: validation.error.format() },
+        { status: 400 }
+      );
     }
+
+    const validatedUserId = validation.data;
 
     // Fetch this month's transactions
     const startOfMonth = new Date();
@@ -18,7 +32,7 @@ export async function GET(request: Request) {
     const { data: transactions, error: txError } = await supabase
       .from('transactions')
       .select('type, amount')
-      .eq('user_id', userId)
+      .eq('user_id', validatedUserId)
       .gte('date', startOfMonth.toISOString());
 
     if (txError) throw txError;
@@ -36,7 +50,7 @@ export async function GET(request: Request) {
     const { data: goals, error: goalsError } = await supabase
       .from('goals')
       .select('target_amount, current_amount')
-      .eq('user_id', userId)
+      .eq('user_id', validatedUserId)
       .eq('completed', false);
 
     if (goalsError) throw goalsError;

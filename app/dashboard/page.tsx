@@ -4,19 +4,21 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/utils";
-import { ArrowUpRight, ArrowDownRight, Trophy, Plus, Search, Bell, Mic, Sparkles, Zap, Activity, Eye, EyeOff, Globe, LineChart, BarChart3, TrendingUp, DollarSign, BookOpen } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Trophy, Plus, Search, Bell, Mic, Sparkles, Zap, Activity, Eye, EyeOff, Globe, LineChart, BarChart3, TrendingUp, DollarSign, BookOpen, Menu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import BrandLogo from "@/components/BrandLogo";
 import { useCurrency } from "@/components/CurrencyProvider";
+import { useNavigation } from "@/components/NavigationProvider";
 import { awardPoints } from "@/lib/points";
 
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { toggleSidebar } = useNavigation();
   const [profile, setProfile] = useState<any>(null);
   const [stats, setStats] = useState({ income: 0, expenses: 0, balance: 0 });
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -87,32 +89,39 @@ export default function DashboardPage() {
         // Auto Net Worth Milestone Check
         const netWorth = inc - exp;
         const currentMilestone = Number(localStorage.getItem(`nw-milestone-${user.id}`) || "0");
-        const nextMilestone = currentMilestone === 0 ? 100 : currentMilestone * 2; // 100, 200, 400, 800...
+        const nextMilestone = currentMilestone === 0 ? 100 : currentMilestone * 2;
         
         setNextNwMilestone(nextMilestone);
 
-        if (netWorth >= nextMilestone) {
+        // Only award points if netWorth meets or exceeds the next milestone
+        // AND the next milestone is higher than what we've already achieved
+        if (netWorth >= nextMilestone && nextMilestone > currentMilestone) {
+           const milestoneReached = nextMilestone;
+           const newTarget = milestoneReached * 2;
+           
+           // First save to localStorage to prevent double-awarding
+           localStorage.setItem(`nw-milestone-${user.id}`, milestoneReached.toString());
+           setNextNwMilestone(newTarget);
+           
+           // Then award points
            awardPoints(user.id, 50).then(async () => {
-              const newTarget = nextMilestone * 2;
-              localStorage.setItem(`nw-milestone-${user.id}`, nextMilestone.toString());
-              setMilestoneCelebration(nextMilestone);
-              setNextNwMilestone(newTarget);
-              
-              // Insert notification
-              const newNotif = {
-                user_id: user.id,
-                type: 'milestone',
-                title: 'Net Worth Milestone! 🏆',
-                message: `You hit ${formatCurrency(nextMilestone)}! +50 Pts.`,
-                read: false
-              };
-              const { data: inserted } = await supabase.from('notifications').insert(newNotif).select().single();
-              if (inserted) {
-                setNotifications(prev => [inserted, ...prev]);
-              }
+               setMilestoneCelebration(milestoneReached);
+               
+               // Insert notification
+               const newNotif = {
+                 user_id: user.id,
+                 type: 'milestone',
+                 title: 'Net Worth Milestone! 🏆',
+                 message: `You hit ${formatCurrency(milestoneReached)}! +50 Pts.`,
+                 read: false
+               };
+               const { data: inserted } = await supabase.from('notifications').insert(newNotif).select().single();
+               if (inserted) {
+                 setNotifications(prev => [inserted, ...prev]);
+               }
 
-              setTimeout(() => setMilestoneCelebration(null), 8000);
-           });
+               setTimeout(() => setMilestoneCelebration(null), 8000);
+            });
         }
       }
 
@@ -190,10 +199,16 @@ export default function DashboardPage() {
            </motion.div>
          )}
        </AnimatePresence>
-       {/* Top Nav (Glassmorphism Header) */}
-       <div className="flex justify-between items-center mb-8 relative z-50">
-          <div className="flex items-center gap-4">
-            <BrandLogo size="sm" showGlow={false} href="/" className="hidden md:block" />
+        {/* Top Nav (Glassmorphism Header) */}
+        <div className="flex justify-between items-center mb-8 relative z-50">
+           <div className="flex items-center gap-4">
+             <button 
+               onClick={toggleSidebar} 
+               className="hidden md:flex w-10 h-10 rounded-full bg-surfaceGlass backdrop-blur-md border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-all shadow-lg"
+             >
+               <Menu className="w-5 h-5" />
+             </button>
+             <BrandLogo size="sm" showGlow={false} href="/" className="hidden md:block" />
             <div className="flex items-center gap-4 cursor-pointer group" onClick={() => setShowScoreInfo(!showScoreInfo)}>
              <div className="w-12 h-12 rounded-full bg-surfaceGlass backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg hover:shadow-glow-purple transition-all duration-300 group-hover:bg-purpleAccent/10 group-hover:border-purpleAccent/50">
                 <span className="font-bold text-lg text-white">{(profile?.name || "U")[0].toUpperCase()}</span>
@@ -206,21 +221,22 @@ export default function DashboardPage() {
                 </div>
              </div>
              
-             {showScoreInfo && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className="absolute top-16 left-0 w-56 bg-surfaceGlass/90 backdrop-blur-2xl border border-white/10 p-4 rounded-2xl shadow-[0_0_40px_rgba(179,136,255,0.15)] z-50 pointer-events-auto"
-                >
-                   <p className="text-xs text-white/50 font-bold uppercase tracking-wider mb-3">Earn Points</p>
-                   <ul className="text-xs text-white/80 space-y-2.5 font-medium">
-                     <li className="flex justify-between items-center"><span>Log Transaction</span><span className="text-accent font-bold">+2</span></li>
-                     <li className="flex justify-between items-center"><span>Hit Weekly Goal</span><span className="text-accent font-bold">+20</span></li>
-                     <li className="flex justify-between items-center"><span>Net Worth Milestones</span><span className="text-accent font-bold">+50</span></li>
-                   </ul>
-                   <Link href="/learn" className="mt-4 block w-full text-center text-[10px] font-black tracking-widest uppercase text-purpleAccent border border-purpleAccent/30 bg-purpleAccent/5 py-2.5 rounded-xl hover:bg-purpleAccent/10 transition-colors">Level Up</Link>
-                </motion.div>
-             )}
+              {showScoreInfo && (
+                 <motion.div 
+                   initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                   animate={{ opacity: 1, y: 0, scale: 1 }}
+                   className="absolute top-16 left-0 w-56 bg-surfaceGlass/90 backdrop-blur-2xl border border-white/10 p-4 rounded-2xl shadow-[0_0_40px_rgba(179,136,255,0.15)] z-50 pointer-events-auto"
+                 >
+                    <p className="text-xs text-white/50 font-bold uppercase tracking-wider mb-3">Earn Points</p>
+                    <ul className="text-xs text-white/80 space-y-2.5 font-medium">
+                      <li className="flex justify-between items-center"><span>Log Transaction</span><span className="text-accent font-bold">+2</span></li>
+                      <li className="flex justify-between items-center"><span>Hit Weekly Goal</span><span className="text-accent font-bold">+20</span></li>
+                      <li className="flex justify-between items-center"><span>Net Worth Milestones</span><span className="text-accent font-bold">+50</span></li>
+                    </ul>
+                    <Link href="/learn" className="mt-4 block w-full text-center text-[10px] font-black tracking-widest uppercase text-purpleAccent border border-purpleAccent/30 bg-purpleAccent/5 py-2.5 rounded-xl hover:bg-purpleAccent/10 transition-colors">Level Up</Link>
+                    <Link href="/settings" className="mt-2 block w-full text-center text-[10px] font-black tracking-widest uppercase text-white/60 border border-white/10 bg-white/5 py-2.5 rounded-xl hover:bg-white/10 transition-colors">Settings</Link>
+                 </motion.div>
+              )}
              </div>
              
              {/* Currency Selector – Desktop */}
