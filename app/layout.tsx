@@ -7,6 +7,7 @@ import { CurrencyProvider } from "@/components/CurrencyProvider";
 import { NavigationProvider } from "@/components/NavigationProvider";
 import BottomNav from "@/components/BottomNav";
 import SidebarWrapper from "@/components/SidebarWrapper";
+import AuthGuard from "@/components/AuthGuard";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,7 +28,9 @@ export default function RootLayout({
           <AuthProvider>
             <NavigationProvider>
               <SidebarWrapper />
-              {children}
+              <AuthGuard>
+                {children}
+              </AuthGuard>
               <BottomNav />
             </NavigationProvider>
           </AuthProvider>
