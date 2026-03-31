@@ -10,6 +10,7 @@ CREATE TABLE users (
   money_score INTEGER DEFAULT 0,
   streak INTEGER DEFAULT 0,
   last_log_date DATE,
+  default_currency TEXT DEFAULT 'USD',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

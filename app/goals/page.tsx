@@ -8,10 +8,12 @@ import { Plus, Target, CheckCircle2, Trophy, RotateCcw, Trash2, ArrowLeft } from
 import { awardPoints } from "@/lib/points";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useCurrency } from "@/components/CurrencyProvider";
 
 export default function GoalsPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { currency, convert } = useCurrency();
   const [goals, setGoals] = useState<any[]>([]);
 
   // Form State
@@ -48,11 +50,14 @@ export default function GoalsPage() {
     if (!targetAmount) return;
     setLoading(true);
 
+    // Convert user input to USD for storage
+    const targetAmountUSD = convert(Number(targetAmount), currency, "USD");
+
     const { error } = await supabase.from("goals").insert({
       user_id: user?.id,
       name,
       emoji,
-      target_amount: Number(targetAmount),
+      target_amount: targetAmountUSD,
       target_date: targetDate || null
     });
 
@@ -74,7 +79,10 @@ export default function GoalsPage() {
     if (!contribution || isNaN(Number(contribution))) return;
     setLoading(true);
 
-    const newAmount = Number(goal.current_amount) + Number(contribution);
+    // Convert contribution to USD for storage
+    const contributionUSD = convert(Number(contribution), currency, "USD");
+    
+    const newAmount = Number(goal.current_amount) + contributionUSD;
     const completed = newAmount >= Number(goal.target_amount);
 
     const { error } = await supabase
@@ -220,10 +228,10 @@ export default function GoalsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-textMuted mb-1">Target Amount ($)</label>
+                  <label className="block text-xs text-textMuted mb-1">Target Amount ({currency})</label>
                   <input type="number" step="0.01" value={targetAmount} onChange={e => setTargetAmount(e.target.value)} required
                     className="w-full bg-[#0A0C10] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent"
-                    placeholder="150.00" />
+                    placeholder={`0.00`} />
                 </div>
                 <div>
                   <label className="block text-xs text-textMuted mb-1">Target Date (Opt)</label>
@@ -277,7 +285,7 @@ export default function GoalsPage() {
                   </div>
                   <div>
                     <h3 className="text-white font-bold text-lg">{goal.name}</h3>
-                    <p className="text-textMuted text-xs mt-0.5">Target: {formatCurrency(goal.target_amount)}</p>
+                    <p className="text-textMuted text-xs mt-0.5">Target: {formatCurrency(convert(Number(goal.target_amount), "USD", currency), currency)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -292,7 +300,7 @@ export default function GoalsPage() {
               {/* Progress Bar */}
               <div className="mt-6">
                 <div className="flex justify-between text-xs mb-2">
-                  <span className="text-white font-medium">{formatCurrency(goal.current_amount)} saved</span>
+                  <span className="text-white font-medium">{formatCurrency(convert(Number(goal.current_amount), "USD", currency), currency)} saved</span>
                   <span className="text-textMuted">{Math.round(percent)}%</span>
                 </div>
                 <div className="w-full bg-[#0A0C10] h-3 rounded-full overflow-hidden shadow-inner">

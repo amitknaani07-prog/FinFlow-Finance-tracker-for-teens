@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useAuth } from "./AuthProvider";
+import { supabase } from "@/lib/supabase";
 
 type CurrencyContextType = {
   currency: string;
@@ -17,14 +19,11 @@ const CurrencyContext = createContext<CurrencyContextType>({
 });
 
 export const CurrencyProvider = ({ children }: { children: React.ReactNode }) => {
-  const [currency, setCurrency] = useState("USD");
+  const { user } = useAuth();
+  const [currency, setCurrencyState] = useState("USD");
   const [rates, setRates] = useState<Record<string, number>>({ USD: 1 });
 
   useEffect(() => {
-    // Attempt to load from localStorage
-    const saved = localStorage.getItem("finflow-currency");
-    if (saved) setCurrency(saved);
-
     const fetchRates = async () => {
       try {
         const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
@@ -38,9 +37,44 @@ export const CurrencyProvider = ({ children }: { children: React.ReactNode }) =>
     fetchRates();
   }, []);
 
-  const handleSetCurrency = (c: string) => {
-    setCurrency(c);
+  useEffect(() => {
+    const loadCurrency = async () => {
+      if (user) {
+        // Fetch from Supabase
+        const { data, error } = await supabase
+          .from("users")
+          .select("default_currency")
+          .eq("id", user.id)
+          .single();
+        
+        if (data && data.default_currency) {
+          setCurrencyState(data.default_currency);
+          localStorage.setItem("finflow-currency", data.default_currency);
+        } else {
+          // Fallback to localStorage or default
+          const saved = localStorage.getItem("finflow-currency");
+          if (saved) setCurrencyState(saved);
+        }
+      } else {
+        // Guest mode
+        const saved = localStorage.getItem("finflow-currency");
+        if (saved) setCurrencyState(saved);
+      }
+    };
+
+    loadCurrency();
+  }, [user]);
+
+  const handleSetCurrency = async (c: string) => {
+    setCurrencyState(c);
     localStorage.setItem("finflow-currency", c);
+
+    if (user) {
+      await supabase
+        .from("users")
+        .update({ default_currency: c })
+        .eq("id", user.id);
+    }
   };
 
   const convert = (amount: number, from = "USD", to = currency) => {

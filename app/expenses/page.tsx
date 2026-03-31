@@ -39,7 +39,7 @@ export default function ExpensesPage() {
   
   // Form State
   const [amount, setAmount] = useState("");
-  const [inputCurrency, setInputCurrency] = useState("USD");
+  const [inputCurrency, setInputCurrency] = useState(currency);
   const [category, setCategory] = useState(EXPENSE_CATEGORIES[0]);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [note, setNote] = useState("");
@@ -50,6 +50,11 @@ export default function ExpensesPage() {
   useEffect(() => {
     if (user) fetchExpenses();
   }, [user]);
+
+  // Sync input currency with global currency preference
+  useEffect(() => {
+    setInputCurrency(currency);
+  }, [currency]);
 
   const fetchExpenses = async () => {
     const { data } = await supabase
@@ -184,33 +189,8 @@ export default function ExpensesPage() {
         )}
 
         <form onSubmit={handleAddExpense} className="space-y-4">
-          {/* Currency Picker */}
-          <div>
-            <label className="block text-xs text-textMuted mb-2">Input Currency</label>
-            <div className="flex gap-2 flex-wrap">
-              {INPUT_CURRENCIES.map((c) => (
-                <button
-                  key={c.code}
-                  type="button"
-                  onClick={() => setInputCurrency(c.code)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-black tracking-wider transition-all ${
-                    inputCurrency === c.code
-                      ? "bg-danger/20 border border-danger/50 text-danger"
-                      : "bg-white/5 border border-white/10 text-white/50 hover:text-white hover:border-white/20"
-                  }`}
-                >
-                  <span>{c.flag}</span>
-                  <span>{c.code}</span>
-                  <span className="text-white/30">{c.symbol}</span>
-                </button>
-              ))}
-            </div>
-            {inputCurrency !== "USD" && (
-              <p className="text-[11px] text-white/30 mt-1.5 pl-1">
-                Amount will be auto-converted to USD for storage
-              </p>
-            )}
-          </div>
+          {/* Hidden Currency - Using Global Default */}
+          <input type="hidden" value={inputCurrency} />
 
           <div className="grid grid-cols-2 gap-4">
             <div>

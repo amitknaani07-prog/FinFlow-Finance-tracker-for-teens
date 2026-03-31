@@ -418,86 +418,86 @@ export default function DashboardPage() {
             </div>
          </motion.div>
 
-         {/* 3. LEADERBOARDS & COMPETITION */}
-         <motion.div 
-           variants={itemVars} 
-           onClick={() => router.push('/leaderboard')}
-           className="col-span-1 md:col-span-6 lg:col-span-6 p-6 rounded-[38px] bg-white/5 backdrop-blur-3xl border border-white/5 hover:border-white/20 transition-all duration-500 group cursor-pointer flex flex-col justify-between relative overflow-hidden min-h-[14rem] shadow-xl"
-         >
-            <div className="absolute top-0 right-0 w-[60%] h-[60%] bg-accent/5 rounded-full blur-[60px] pointer-events-none group-hover:bg-accent/15 transition-all duration-1000" />
-            
-            <div className="flex justify-between items-center mb-6 z-10 relative">
-               <p className="text-white/60 text-xs font-black uppercase tracking-[0.2em]">Leaderboard</p>
-               <Trophy className="w-5 h-5 text-accent/60 drop-shadow-[0_0_8px_rgba(0,230,118,0.3)]" />
-            </div>
-            {/* Visual Podium */}
-            <div className="flex items-end justify-center gap-3 mt-auto h-28 z-10 relative">
-               <div className="w-1/3 flex flex-col items-center">
-                 <div className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">#2</div>
-                 <div className="w-full bg-surface border border-white/5 rounded-t-2xl h-[55%] flex items-start justify-center pt-3 shadow-inner">
-                   <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 text-[9px] flex items-center justify-center font-black text-white/50 tracking-wider">AJ</div>
-                 </div>
-               </div>
-               <div className="w-1/3 flex flex-col items-center group-hover:-translate-y-2 transition-transform duration-500">
-                 <div className="text-accent text-[11px] font-black uppercase tracking-widest mb-1 drop-shadow-[0_0_8px_rgba(0,230,118,0.8)]">#1</div>
-                 <div className="w-full bg-gradient-to-t from-background to-accent/10 border-t-2 border-accent/40 rounded-t-2xl h-[95%] flex items-start justify-center pt-3 shadow-[0_-5px_20px_rgba(0,230,118,0.1)]">
-                   <div className="w-10 h-10 rounded-full bg-accent/20 border-2 border-accent/50 text-[11px] flex items-center justify-center font-black text-accent shadow-glow-green tracking-wider">ME</div>
-                 </div>
-               </div>
-               <div className="w-1/3 flex flex-col items-center">
-                 <div className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">#3</div>
-                 <div className="w-full bg-surface border border-white/5 rounded-t-2xl h-[40%] flex items-start justify-center pt-3 shadow-inner">
-                   <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 text-[9px] flex items-center justify-center font-black text-white/50 tracking-wider">SK</div>
-                 </div>
-               </div>
-            </div>
-         </motion.div>
+          {/* 3. LEADERBOARDS & COMPETITION */}
+          <motion.div 
+            variants={itemVars} 
+            onClick={() => router.push('/leaderboard')}
+            className="col-span-1 md:col-span-6 lg:col-span-6 p-6 rounded-[38px] bg-white/5 backdrop-blur-3xl border border-white/5 hover:border-white/20 transition-all duration-500 group cursor-pointer flex flex-col justify-between relative overflow-hidden min-h-[14rem] shadow-xl"
+          >
+             <div className="absolute top-0 right-0 w-[60%] h-[60%] bg-accent/5 rounded-full blur-[60px] pointer-events-none group-hover:bg-accent/15 transition-all duration-1000" />
+             
+             <div className="flex justify-between items-center mb-6 z-10 relative">
+                <p className="text-white/60 text-xs font-black uppercase tracking-[0.2em]">Leaderboard</p>
+                <Trophy className="w-5 h-5 text-accent/60 drop-shadow-[0_0_8px_rgba(0,230,118,0.3)]" />
+             </div>
+             {/* Visual Podium */}
+             <div className="flex items-end justify-center gap-3 mt-auto h-28 z-10 relative">
+                <div className="w-1/3 flex flex-col items-center">
+                  <div className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">#2</div>
+                  <div className="w-full bg-surface border border-white/5 rounded-t-2xl h-[55%] flex items-start justify-center pt-3 shadow-inner">
+                    <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 text-[9px] flex items-center justify-center font-black text-white/50 tracking-wider">AJ</div>
+                  </div>
+                </div>
+                <div className="w-1/3 flex flex-col items-center group-hover:-translate-y-2 transition-transform duration-500">
+                  <div className="text-accent text-[11px] font-black uppercase tracking-widest mb-1 drop-shadow-[0_0_8px_rgba(0,230,118,0.8)]">#1</div>
+                  <div className="w-full bg-gradient-to-t from-background to-accent/10 border-t-2 border-accent/40 rounded-t-2xl h-[95%] flex items-start justify-center pt-3 shadow-[0_-5px_20px_rgba(0,230,118,0.1)]">
+                    <div className="w-10 h-10 rounded-full bg-accent/20 border-2 border-accent/50 text-[11px] flex items-center justify-center font-black text-accent shadow-glow-green tracking-wider">ME</div>
+                  </div>
+                </div>
+                <div className="w-1/3 flex flex-col items-center">
+                  <div className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">#3</div>
+                  <div className="w-full bg-surface border border-white/5 rounded-t-2xl h-[40%] flex items-start justify-center pt-3 shadow-inner">
+                    <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 text-[9px] flex items-center justify-center font-black text-white/50 tracking-wider">SK</div>
+                  </div>
+                </div>
+             </div>
+          </motion.div>
 
-         {/* 3.5. GLOBAL MARKET & SUMMARY (New Grid Row elements) */}
-         <motion.div 
-           variants={itemVars} 
-           onClick={() => router.push('/market')}
-           className="col-span-1 md:col-span-6 lg:col-span-3 p-6 rounded-[38px] bg-gradient-to-br from-blue-900/10 to-surfaceGlass backdrop-blur-3xl border border-white/5 hover:border-blue-400/30 transition-all duration-500 group cursor-pointer flex flex-col justify-between relative overflow-hidden min-h-[14rem] shadow-xl"
-         >
-            <div className="absolute top-0 right-0 w-[80%] h-[80%] bg-blue-500/5 rounded-full blur-[50px] pointer-events-none group-hover:bg-blue-500/15 transition-all duration-1000" />
-            <div className="flex justify-between items-start mb-4 z-10 relative">
-               <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-1">Live Data</p>
-                  <h3 className="text-white font-bold text-lg tracking-wide">Global Market</h3>
-               </div>
-               <Globe className="w-6 h-6 text-blue-400/80 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]" />
-            </div>
-            <div className="mt-auto z-10">
-               <div className="flex justify-between items-center text-xs font-bold text-white/70 mb-2"><span>S&P 500</span><span className="text-accent">+1.2%</span></div>
-               <div className="flex justify-between items-center text-xs font-bold text-white/70"><span>USD/ILS</span><span className="text-accent">+0.4%</span></div>
-            </div>
-         </motion.div>
+          {/* 3.5. GLOBAL MARKET & SUMMARY (New Grid Row elements) */}
+          <motion.div 
+            variants={itemVars} 
+            onClick={() => router.push('/market')}
+            className="col-span-1 md:col-span-6 lg:col-span-3 p-6 rounded-[38px] bg-gradient-to-br from-blue-900/10 to-surfaceGlass backdrop-blur-3xl border border-white/5 hover:border-blue-400/30 transition-all duration-500 group cursor-pointer flex flex-col justify-between relative overflow-hidden min-h-[14rem] shadow-xl"
+          >
+             <div className="absolute top-0 right-0 w-[80%] h-[80%] bg-blue-500/5 rounded-full blur-[50px] pointer-events-none group-hover:bg-blue-500/15 transition-all duration-1000" />
+             <div className="flex justify-between items-start mb-4 z-10 relative">
+                <div>
+                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-1">Live Data</p>
+                   <h3 className="text-white font-bold text-lg tracking-wide">Global Market</h3>
+                </div>
+                <Globe className="w-6 h-6 text-blue-400/80 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]" />
+             </div>
+             <div className="mt-auto z-10">
+                <div className="flex justify-between items-center text-xs font-bold text-white/70 mb-2"><span>S&P 500</span><span className="text-accent">+1.2%</span></div>
+                <div className="flex justify-between items-center text-xs font-bold text-white/70"><span>USD/ILS</span><span className="text-accent">+0.4%</span></div>
+             </div>
+          </motion.div>
 
-         <motion.div 
-           variants={itemVars} 
-           onClick={() => router.push('/summary')}
-           className="col-span-1 md:col-span-6 lg:col-span-4 p-6 rounded-[38px] bg-surfaceGlass backdrop-blur-3xl border border-white/5 hover:border-white/20 transition-all duration-500 group cursor-pointer flex flex-col justify-between relative overflow-hidden min-h-[14rem] shadow-xl"
-         >
-            <div className="flex justify-between items-start mb-4 z-10 relative">
-               <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Analytics</p>
-                  <h3 className="text-white font-bold text-lg tracking-wide">Summary</h3>
-               </div>
-               <BarChart3 className="w-5 h-5 text-white/60" />
-            </div>
-            <div className="mt-auto h-16 w-full opacity-60 group-hover:opacity-100 transition-opacity flex items-end justify-between gap-1">
-               {[40, 70, 30, 80, 50, 90, 60].map((h, i) => (
-                  <div key={i} className="w-full bg-white/20 rounded-t-sm" style={{ height: `${h}%` }}></div>
-               ))}
-            </div>
-         </motion.div>
+          <motion.div 
+            variants={itemVars} 
+            onClick={() => router.push('/summary')}
+            className="col-span-1 md:col-span-6 lg:col-span-4 p-6 rounded-[38px] bg-surfaceGlass backdrop-blur-3xl border border-white/5 hover:border-white/20 transition-all duration-500 group cursor-pointer flex flex-col justify-between relative overflow-hidden min-h-[14rem] shadow-xl"
+          >
+             <div className="flex justify-between items-start mb-4 z-10 relative">
+                <div>
+                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Analytics</p>
+                   <h3 className="text-white font-bold text-lg tracking-wide">Summary</h3>
+                </div>
+                <BarChart3 className="w-5 h-5 text-white/60" />
+             </div>
+             <div className="mt-auto h-16 w-full opacity-60 group-hover:opacity-100 transition-opacity flex items-end justify-between gap-1">
+                {[40, 70, 30, 80, 50, 90, 60].map((h, i) => (
+                   <div key={i} className="w-full bg-white/20 rounded-t-sm" style={{ height: `${h}%` }}></div>
+                ))}
+             </div>
+          </motion.div>
 
-         {/* 4. LEARN / eLearning Bento Widget */}
-         <motion.div 
-           variants={itemVars} 
-           onClick={() => router.push('/learn')}
-           className="col-span-1 md:col-span-6 lg:col-span-4 p-6 rounded-[38px] bg-gradient-to-br from-purpleAccent/10 to-background/40 backdrop-blur-3xl border border-purpleAccent/10 hover:border-purpleAccent/40 transition-all duration-500 group cursor-pointer flex flex-col justify-between relative overflow-hidden min-h-[14rem] shadow-xl"
-         >
+          {/* 4. LEARN / eLearning Bento Widget */}
+          <motion.div 
+            variants={itemVars} 
+            onClick={() => router.push('/learn')}
+            className="col-span-1 md:col-span-6 lg:col-span-4 p-6 rounded-[38px] bg-gradient-to-br from-purpleAccent/10 to-background/40 backdrop-blur-3xl border border-purpleAccent/10 hover:border-purpleAccent/40 transition-all duration-500 group cursor-pointer flex flex-col justify-between relative overflow-hidden min-h-[14rem] shadow-xl"
+          >
             <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-purpleAccent/20 rounded-full blur-[80px] pointer-events-none group-hover:scale-125 transition-transform duration-1000" />
             <div className="flex justify-between items-start z-10 relative">
                <div>
@@ -522,12 +522,12 @@ export default function DashboardPage() {
             </div>
          </motion.div>
 
-         {/* 5. GOALS TRACKER */}
-         <motion.div 
-           variants={itemVars} 
-           onClick={() => router.push('/goals')}
-           className="col-span-1 md:col-span-12 lg:col-span-5 p-6 rounded-[38px] bg-white/5 backdrop-blur-3xl border border-white/5 hover:border-purpleAccent/30 transition-all duration-500 relative overflow-hidden group cursor-pointer min-h-[14rem] shadow-xl"
-         >
+          {/* 5. GOALS TRACKER */}
+          <motion.div 
+            variants={itemVars} 
+            onClick={() => router.push('/goals')}
+            className="col-span-1 md:col-span-12 lg:col-span-5 p-6 rounded-[38px] bg-white/5 backdrop-blur-3xl border border-white/5 hover:border-purpleAccent/30 transition-all duration-500 relative overflow-hidden group cursor-pointer min-h-[14rem] shadow-xl"
+          >
             <div className="absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t from-purpleAccent/10 to-transparent pointer-events-none opacity-40 group-hover:opacity-80 transition-opacity duration-700" />
             <div className="flex justify-between items-start mb-4 z-10 relative">
                <div>
