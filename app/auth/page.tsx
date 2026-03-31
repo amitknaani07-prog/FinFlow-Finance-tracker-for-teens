@@ -50,14 +50,14 @@ export default function AuthPage() {
     setGoogleLoading(true);
     setError(null);
 
-    // Use the Supabase callback URL directly to match Google Console and Supabase config
-    const supabaseCallbackUrl = "https://tnyjxhuwcetlllgsvvjv.supabase.co/auth/v1/callback";
-    const devUrl = "http://localhost:3000/auth/callback";
+    // Use the Real domain (no /callback) as per your Google Console settings
+    const productionUrl = "https://finflow-finance-tracker.vercel.app";
+    const devUrl = "http://localhost:3000";
 
     // Determine the correct redirect URL
     const isProduction = window.location.hostname.includes("vercel.app");
     const redirectUrl = isProduction 
-      ? supabaseCallbackUrl
+      ? productionUrl
       : devUrl;
 
     console.log('Redirect URL being used:', redirectUrl);
