@@ -50,22 +50,10 @@ export default function AuthPage() {
     setGoogleLoading(true);
     setError(null);
 
-    // Use the Supabase callback URL directly to match Google Console and Supabase config
-    const supabaseCallbackUrl = "https://tnyjxhuwcetlllgsvvjv.supabase.co/auth/v1/callback";
-    const devUrl = "http://localhost:3000/auth/callback";
-
-    // Determine the correct redirect URL
-    const isProduction = window.location.hostname.includes("vercel.app");
-    const redirectUrl = isProduction 
-      ? supabaseCallbackUrl
-      : devUrl;
-
-    console.log('Redirect URL being used:', redirectUrl);
-
+    // Let Supabase handle the redirect natively
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: redirectUrl,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
