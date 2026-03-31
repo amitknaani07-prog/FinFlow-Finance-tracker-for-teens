@@ -50,10 +50,15 @@ export default function AuthPage() {
     setGoogleLoading(true);
     setError(null);
 
-    // Try different redirect URL approaches
-    const redirectUrl = typeof window !== 'undefined' 
-      ? `${window.location.origin}/auth/callback`
-      : 'http://localhost:3004/auth/callback';
+    // Force the production URL to match Supabase config exactly
+    const productionUrl = "https://finflow-finance-tracker.vercel.app";
+    const devUrl = "http://localhost:3000";
+    
+    // Determine the correct redirect URL
+    const isProduction = window.location.hostname.includes("vercel.app");
+    const redirectUrl = isProduction 
+      ? `${productionUrl}/auth/callback`
+      : `${devUrl}/auth/callback`;
 
     console.log('Redirect URL being used:', redirectUrl);
 
