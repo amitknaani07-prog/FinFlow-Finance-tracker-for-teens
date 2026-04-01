@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
@@ -9,10 +9,29 @@ export async function POST(request: Request) {
   if (rateLimitResponse) return rateLimitResponse;
 
   try {
-    // Get user from auth header (set by middleware/supabase client)
+    // Create a server client to read cookies from the request
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.headers.get('Cookie')?.split('; ').find(row => row.startsWith(`${name}=`))?.split('=')[1];
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            // Not needed for GET requests, but required for interface
+          },
+          remove(name: string, options: CookieOptions) {
+            // Not needed for GET requests
+          },
+        },
+      }
+    );
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
+      console.error('Auth error:', authError);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -25,7 +44,6 @@ export async function POST(request: Request) {
         money_score: 0,
         streak: 0,
         last_log_date: null,
-        // income_sources: [], // Optionally clear this? Let's keep it for convenience.
       })
       .eq('id', userId);
 
