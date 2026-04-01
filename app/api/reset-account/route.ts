@@ -38,6 +38,12 @@ export async function POST(request: Request) {
 
     console.log("Session check:", session ? "Active" : "None", sessionError);
 
+    if (sessionError || !session) {
+      console.error('Session error:', sessionError);
+      console.log('Cookies received:', request.headers.get('Cookie'));
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
