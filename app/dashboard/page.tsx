@@ -581,15 +581,11 @@ export default function DashboardPage() {
                <p className="text-white/50 text-[10px] font-black uppercase tracking-[0.2em] mb-1.5">Action Center</p>
                <h3 className="text-white font-black text-2xl md:text-3xl tracking-tight leading-none">Your Moves</h3>
              </div>
-             <div className="flex items-center gap-3">
-               {/* Singularity Scraper Mock Button / Webhooks Trigger */}
-               <button onClick={() => alert("World state synchronized! (Action dispatched)")} className="flex items-center gap-2 px-5 py-3 bg-white text-background rounded-full font-black text-[11px] uppercase tracking-widest hover:scale-105 hover:bg-white/90 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.2)]">
-                  <Globe className="w-4 h-4" /> Sync World
-               </button>
-               <button onClick={() => setHideActivity(!hideActivity)} className="w-12 h-12 rounded-full bg-surfaceGlass backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all shadow-lg hover:border-white/20">
-                 {hideActivity ? <EyeOff className="w-4 h-4 text-white/50" /> : <Eye className="w-4 h-4 text-white/50" />}
-               </button>
-             </div>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setHideActivity(!hideActivity)} className="w-12 h-12 rounded-full bg-surfaceGlass backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all shadow-lg hover:border-white/20">
+                  {hideActivity ? <EyeOff className="w-4 h-4 text-white/50" /> : <Eye className="w-4 h-4 text-white/50" />}
+                </button>
+              </div>
            </div>
            
            <div className="space-y-4">
