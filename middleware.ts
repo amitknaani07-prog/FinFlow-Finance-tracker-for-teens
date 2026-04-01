@@ -23,65 +23,15 @@ export async function middleware(req: NextRequest) {
     }
   )
 
-  // Get access token directly from cookies
-  const accessToken = req.cookies.get('sb-access-token')?.value
-
-  let user = null
-  
-  // Validate token with Supabase API
-  if (accessToken) {
-    const { data: { user: validUser } } = await supabase.auth.getUser(accessToken)
-    user = validUser
-  }
-
-  // If no valid user from token, try session-based approach as fallback
-  if (!user) {
-    const { data: { session } } = await supabase.auth.getSession()
-    user = session?.user ?? null
-  }
-
-  const { pathname } = req.nextUrl
-
-  const protectedRoutes = [
-    '/dashboard',
-    '/income',
-    '/expenses',
-    '/goals',
-    '/learn',
-    '/settings',
-    '/market',
-    '/summary',
-    '/transactions',
-  ]
-
-  const isProtectedRoute = protectedRoutes.some(route => 
-    pathname.startsWith(route)
-  )
-
-  if (isProtectedRoute && !user) {
-    return NextResponse.redirect(new URL('/', req.url))
-  }
-
-  const guestOnlyRoutes = ['/', '/auth']
-  if (guestOnlyRoutes.includes(pathname) && user) {
-    return NextResponse.redirect(new URL('/dashboard', req.url))
-  }
+  // Just initialize cookies - don't check auth here
+  // Client-side AuthGuard handles auth redirects
+  await supabase.auth.getSession()
 
   return res
 }
 
 export const config = {
   matcher: [
-    '/',
-    '/auth',
-    '/dashboard/:path*',
-    '/income/:path*',
-    '/expenses/:path*',
-    '/goals/:path*',
-    '/learn/:path*',
-    '/settings/:path*',
-    '/market/:path*',
-    '/summary/:path*',
-    '/transactions/:path*',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
