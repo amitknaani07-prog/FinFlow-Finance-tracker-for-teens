@@ -23,9 +23,14 @@ export async function middleware(req: NextRequest) {
     }
   )
 
-  // Just initialize cookies - don't check auth here
-  // Client-side AuthGuard handles auth redirects
+  // Refresh session and persist cookies to response
   await supabase.auth.getSession()
+  const { data: { session } } = await supabase.auth.getSession()
+  
+  // If session exists, ensure cookies are set on response
+  if (session) {
+    // The setAll callback above already handles this
+  }
 
   return res
 }
