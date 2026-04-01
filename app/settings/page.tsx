@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
-import { LogOut, Save, Moon, User as UserIcon, ArrowLeft } from "lucide-react";
+import { LogOut, Save, Moon, User as UserIcon, ArrowLeft, RefreshCw, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
@@ -13,6 +13,10 @@ export default function SettingsPage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   // Ensure loading state is properly handled for auth
   const [pageLoading, setPageLoading] = useState(true);
@@ -52,6 +56,34 @@ export default function SettingsPage() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/auth");
+  };
+
+  const handleResetAccount = async () => {
+    setResetLoading(true);
+    setResetError(null);
+    setResetSuccess(false);
+
+    try {
+      const res = await fetch('/api/reset-account', {
+        method: 'POST',
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to reset account');
+      }
+
+      setResetSuccess(true);
+      setShowResetConfirm(false);
+      // Refresh the profile to show 0 score
+      const { data: updatedProfile } = await supabase.from("users").select("*").eq("id", user?.id).single();
+      if (updatedProfile) setProfile(updatedProfile);
+
+    } catch (err: any) {
+      setResetError(err.message || 'An unexpected error occurred');
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   if (pageLoading) {
@@ -139,7 +171,27 @@ export default function SettingsPage() {
         <hr className="border-white/5" />
 
         {/* Danger Zone */}
-        <div>
+        <div className="space-y-4">
+          <h3 className="text-sm font-bold text-danger uppercase tracking-wider">Danger Zone</h3>
+          
+          <div className="p-4 bg-danger/5 border border-danger/10 rounded-2xl">
+             <div className="flex flex-col gap-3">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-danger shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-white font-medium text-sm">Reset Account</p>
+                    <p className="text-textMuted text-xs">Delete all transactions, goals, progress and reset your Money Score to 0.</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowResetConfirm(true)}
+                  className="w-full flex items-center justify-center gap-2 bg-danger/20 hover:bg-danger/30 text-danger border border-danger/20 py-2 rounded-xl transition-colors text-sm font-medium"
+                >
+                  <RefreshCw className="w-4 h-4" /> Reset Account
+                </button>
+             </div>
+          </div>
+
           <button 
             onClick={handleSignOut}
             className="w-full flex items-center justify-center gap-2 bg-danger/10 hover:bg-danger/20 text-danger border border-danger/20 py-3 rounded-xl transition-colors font-medium"
@@ -149,6 +201,39 @@ export default function SettingsPage() {
         </div>
 
       </div>
+
+      {/* Reset Confirmation Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#161B22] border border-white/10 p-6 rounded-2xl max-w-sm w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-2">Reset Account?</h3>
+            <p className="text-textMuted text-sm mb-6">
+              This will permanently delete all your transactions, goals, lesson progress, and reset your Money Score to 0. This action cannot be undone.
+            </p>
+            
+            {resetError && <div className="mb-4 text-danger text-sm bg-danger/10 p-3 rounded-lg">{resetError}</div>}
+            {resetSuccess && <div className="mb-4 text-accent text-sm bg-accent/10 p-3 rounded-lg">Account reset successfully!</div>}
+
+            <div className="flex gap-3">
+              <button 
+                onClick={() => { setShowResetConfirm(false); setResetError(null); }}
+                className="flex-1 px-4 py-2 rounded-xl text-white font-medium bg-white/5 hover:bg-white/10 transition-colors"
+                disabled={resetLoading}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleResetAccount}
+                disabled={resetLoading}
+                className="flex-1 px-4 py-2 rounded-xl text-white font-medium bg-danger hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {resetLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : null}
+                {resetLoading ? "Resetting..." : "Yes, Reset"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
