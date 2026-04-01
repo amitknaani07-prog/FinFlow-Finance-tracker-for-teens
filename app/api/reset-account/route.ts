@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import type { NextRequest } from 'next/server';
 import { rateLimit } from '@/lib/rate-limit';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   // Rate Limiting: 5 requests per minute (safety limit)
   const rateLimitCheck = rateLimit(5, 60000);
   const rateLimitResponse = await rateLimitCheck(request as any);
@@ -16,12 +17,7 @@ export async function POST(request: Request) {
       {
         cookies: {
           getAll() {
-            const cookieHeader = request.headers.get('Cookie');
-            if (!cookieHeader) return [];
-            return cookieHeader.split(';').map(c => {
-              const [key, ...v] = c.trim().split('=');
-              return { name: key, value: v.join('=') };
-            });
+            return request.cookies.getAll();
           },
           set(name: string, value: string, options: CookieOptions) {
              // Not needed for POST requests here
@@ -40,7 +36,7 @@ export async function POST(request: Request) {
 
     if (sessionError || !session) {
       console.error('Session error:', sessionError);
-      console.log('Cookies received:', request.headers.get('Cookie'));
+      console.log('Cookies received:', request.cookies.getAll());
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -48,7 +44,7 @@ export async function POST(request: Request) {
 
     if (authError || !user) {
       console.error('Auth error:', authError);
-      console.log('Cookies received:', request.headers.get('Cookie'));
+      console.log('Cookies received:', request.cookies.getAll());
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
