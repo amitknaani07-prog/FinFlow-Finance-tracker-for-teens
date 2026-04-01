@@ -1,9 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 
-export async function GET(request: Request) {
-  // Rate Limiting: 5 requests per minute on auth callback to prevent brute force
+export async function GET(request: NextRequest) {
   const rateLimitCheck = rateLimit(5, 60000);
   const rateLimitResponse = await rateLimitCheck(request as any);
   if (rateLimitResponse) return rateLimitResponse;
@@ -13,18 +13,32 @@ export async function GET(request: Request) {
   const next = searchParams.get("next") ?? "/dashboard";
 
   if (code) {
-    const supabase = createClient(
+    const res = NextResponse.redirect(`${origin}${next}`);
+
+    const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              request.cookies.set(name, value);
+              res.cookies.set(name, value, { ...options, path: options?.path ?? '/' });
+            });
+          },
+        },
+      }
     );
-    
+
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    
+
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      return res;
     }
   }
 
-  // Return the user to an error page if something goes wrong
   return NextResponse.redirect(`${origin}/auth?error=auth_callback_error`);
 }

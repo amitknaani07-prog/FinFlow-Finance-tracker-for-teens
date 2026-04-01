@@ -36,6 +36,7 @@ export async function middleware(req: NextRequest) {
     '/settings',
     '/market',
     '/summary',
+    '/transactions',
   ]
 
   const isProtectedRoute = protectedRoutes.some(route =>
@@ -66,5 +67,6 @@ export const config = {
     '/settings/:path*',
     '/market/:path*',
     '/summary/:path*',
+    '/transactions/:path*',
   ],
 }
