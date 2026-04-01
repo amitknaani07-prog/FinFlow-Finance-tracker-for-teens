@@ -66,6 +66,10 @@ export default function SettingsPage() {
     try {
       const res = await fetch('/api/reset-account', {
         method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
       const data = await res.json();
 
