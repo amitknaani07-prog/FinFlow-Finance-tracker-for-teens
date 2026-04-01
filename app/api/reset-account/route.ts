@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { supabaseAdmin } from '@/lib/supabase';
 import type { NextRequest } from 'next/server';
 import { rateLimit } from '@/lib/rate-limit';
 
@@ -16,22 +16,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          set(name: string, value: string, options: CookieOptions) {},
-          remove(name: string, options: CookieOptions) {},
-        },
-      }
-    );
-
-    // Verify user exists in database
-    const { data: user, error: userError } = await supabase
+    // Verify user exists in database using admin client (bypasses RLS)
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('id', userId)
@@ -43,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Reset User Profile Stats
-    const { error: userError2 } = await supabase
+    const { error: userError2 } = await supabaseAdmin
       .from('users')
       .update({
         money_score: 0,
@@ -55,7 +41,7 @@ export async function POST(request: NextRequest) {
     if (userError2) throw userError2;
 
     // 2. Delete Transactions
-    const { error: transError } = await supabase
+    const { error: transError } = await supabaseAdmin
       .from('transactions')
       .delete()
       .eq('user_id', userId);
@@ -63,7 +49,7 @@ export async function POST(request: NextRequest) {
     if (transError) throw transError;
 
     // 3. Delete Goals
-    const { error: goalsError } = await supabase
+    const { error: goalsError } = await supabaseAdmin
       .from('goals')
       .delete()
       .eq('user_id', userId);
@@ -71,7 +57,7 @@ export async function POST(request: NextRequest) {
     if (goalsError) throw goalsError;
 
     // 4. Delete Lesson Progress
-    const { error: lessonError } = await supabase
+    const { error: lessonError } = await supabaseAdmin
       .from('lesson_progress')
       .delete()
       .eq('user_id', userId);
@@ -79,7 +65,7 @@ export async function POST(request: NextRequest) {
     if (lessonError) throw lessonError;
 
     // 5. Delete Notifications
-    const { error: notifError } = await supabase
+    const { error: notifError } = await supabaseAdmin
       .from('notifications')
       .delete()
       .eq('user_id', userId);
