@@ -15,14 +15,19 @@ export async function POST(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return request.headers.get('Cookie')?.split('; ').find(row => row.startsWith(`${name}=`))?.split('=')[1];
+          getAll() {
+            const cookieHeader = request.headers.get('Cookie');
+            if (!cookieHeader) return [];
+            return cookieHeader.split(';').map(c => {
+              const [key, ...v] = c.trim().split('=');
+              return { name: key, value: v.join('=') };
+            });
           },
           set(name: string, value: string, options: CookieOptions) {
-            // Not needed for GET requests, but required for interface
+             // Not needed for POST requests here
           },
           remove(name: string, options: CookieOptions) {
-            // Not needed for GET requests
+             // Not needed for POST requests here
           },
         },
       }
