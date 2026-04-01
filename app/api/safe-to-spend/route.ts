@@ -58,8 +58,11 @@ export async function GET(request: Request) {
     // Calculate remaining required for goals
     const remainingGoals = goals.reduce((sum, g) => sum + (g.target_amount - g.current_amount), 0);
 
-    // Safe to spend Calculation
-    const safeToSpend = Math.max(0, totalIncome - totalExpense - remainingGoals);
+    // Calculate balance (income - expenses)
+    const balance = totalIncome - totalExpense;
+    
+    // Safe to spend = 50% of balance after accounting for goals
+    const safeToSpend = Math.max(0, (balance * 0.5) - remainingGoals);
 
     return NextResponse.json({
       safe_to_spend: safeToSpend,

@@ -83,6 +83,11 @@ export default function SettingsPage() {
       // Refresh the profile to show 0 score
       const { data: updatedProfile } = await supabase.from("users").select("*").eq("id", user?.id).single();
       if (updatedProfile) setProfile(updatedProfile);
+      
+      // Clear localStorage milestone
+      if (user?.id) {
+        localStorage.removeItem(`nw-milestone-${user.id}`);
+      }
 
     } catch (err: any) {
       setResetError(err.message || 'An unexpected error occurred');
