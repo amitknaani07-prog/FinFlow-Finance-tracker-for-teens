@@ -48,6 +48,12 @@ export default function ExpensesPage() {
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
+    // If no user, ensure we stop loading to prevent infinite spinner
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     if (user) fetchExpenses();
   }, [user]);
 

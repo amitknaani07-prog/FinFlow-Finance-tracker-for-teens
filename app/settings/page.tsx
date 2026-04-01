@@ -14,13 +14,23 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  // Ensure loading state is properly handled for auth
+  const [pageLoading, setPageLoading] = useState(true);
+
   useEffect(() => {
+    // If no user, ensure we stop loading to prevent infinite spinner
+    if (!user) {
+      setPageLoading(false);
+      return;
+    }
+
     if (user) {
       supabase.from("users").select("*").eq("id", user.id).single().then(({ data }) => {
         if (data) {
           setProfile(data);
           setName(data.name);
         }
+        setPageLoading(false);
       });
     }
   }, [user]);
@@ -43,6 +53,14 @@ export default function SettingsPage() {
     await supabase.auth.signOut();
     router.push("/auth");
   };
+
+  if (pageLoading) {
+    return (
+      <div className="min-h-screen bg-[#0D1117] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#00C896] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 pt-8 md:p-8 max-w-2xl mx-auto space-y-8 pb-32">

@@ -74,6 +74,7 @@ const LESSONS = [
 export default function LearnPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
   const [completedLessons, setCompletedLessons] = useState<number[]>([]);
   const [activeLesson, setActiveLesson] = useState<any | null>(null);
   const [userScore, setUserScore] = useState(0);
@@ -84,6 +85,12 @@ export default function LearnPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    // If no user, ensure we stop loading to prevent infinite spinner
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     if (user) fetchProgress();
   }, [user]);
 

@@ -38,7 +38,11 @@ export default function DashboardPage() {
   const [isRecording, setIsRecording] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    // If no user, ensure we stop loading to prevent infinite spinner
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     const fetchData = async () => {
       // Fetch Profile

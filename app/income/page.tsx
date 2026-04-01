@@ -53,6 +53,12 @@ export default function IncomePage() {
   const [showDistribution, setShowDistribution] = useState(false);
 
   useEffect(() => {
+    // If no user, ensure we stop loading to prevent infinite spinner
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     if (user) fetchIncomes();
   }, [user]);
 

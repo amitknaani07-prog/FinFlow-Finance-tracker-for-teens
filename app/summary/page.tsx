@@ -61,7 +61,10 @@ export default function SummaryPage() {
   const [activeMonthId, setActiveMonthId] = useState<string | null>(null); // null = show year summary
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      router.replace('/');
+      return;
+    }
     const fetchData = async () => {
       const { data: txData } = await supabase
         .from("transactions")

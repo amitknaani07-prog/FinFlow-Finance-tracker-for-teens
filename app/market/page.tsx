@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/components/AuthProvider";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowLeft, Globe, TrendingUp, TrendingDown, Zap } from "lucide-react";
@@ -245,8 +246,27 @@ const QUICK_TICKERS = [
 
 export default function MarketPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [activeTicker, setActiveTicker] = useState("FOREXCOM:SPXUSD");
   const [customTicker, setCustomTicker] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // If no user, ensure we stop loading to prevent infinite spinner
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    setLoading(false);
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0D1117] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#00C896] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const containerVars = {
     hidden: { opacity: 0 },
