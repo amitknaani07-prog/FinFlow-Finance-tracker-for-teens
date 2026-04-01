@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 import { rateLimit } from '@/lib/rate-limit';
 
@@ -10,6 +11,8 @@ export async function POST(request: NextRequest) {
   if (rateLimitResponse) return rateLimitResponse;
 
   try {
+    const cookieStore = cookies();
+    
     // Create a server client to read cookies from the request
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,7 +20,7 @@ export async function POST(request: NextRequest) {
       {
         cookies: {
           getAll() {
-            return request.cookies.getAll();
+            return cookieStore.getAll();
           },
           set(name: string, value: string, options: CookieOptions) {
              // Not needed for POST requests here
@@ -37,7 +40,6 @@ export async function POST(request: NextRequest) {
 
     if (sessionError || !session) {
       console.error('Session error:', sessionError);
-      console.log('Cookies received:', request.cookies.getAll());
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -45,7 +47,6 @@ export async function POST(request: NextRequest) {
 
     if (authError || !user) {
       console.error('Auth error:', authError);
-      console.log('Cookies received:', request.cookies.getAll());
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
