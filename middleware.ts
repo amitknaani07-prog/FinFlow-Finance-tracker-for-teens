@@ -23,13 +23,65 @@ export async function middleware(req: NextRequest) {
     }
   )
 
-  await supabase.auth.getSession()
+  // Get access token directly from cookies
+  const accessToken = req.cookies.get('sb-access-token')?.value
+
+  let user = null
+  
+  // Validate token with Supabase API
+  if (accessToken) {
+    const { data: { user: validUser } } = await supabase.auth.getUser(accessToken)
+    user = validUser
+  }
+
+  // If no valid user from token, try session-based approach as fallback
+  if (!user) {
+    const { data: { session } } = await supabase.auth.getSession()
+    user = session?.user ?? null
+  }
+
+  const { pathname } = req.nextUrl
+
+  const protectedRoutes = [
+    '/dashboard',
+    '/income',
+    '/expenses',
+    '/goals',
+    '/learn',
+    '/settings',
+    '/market',
+    '/summary',
+    '/transactions',
+  ]
+
+  const isProtectedRoute = protectedRoutes.some(route => 
+    pathname.startsWith(route)
+  )
+
+  if (isProtectedRoute && !user) {
+    return NextResponse.redirect(new URL('/', req.url))
+  }
+
+  const guestOnlyRoutes = ['/', '/auth']
+  if (guestOnlyRoutes.includes(pathname) && user) {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
+  }
 
   return res
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/',
+    '/auth',
+    '/dashboard/:path*',
+    '/income/:path*',
+    '/expenses/:path*',
+    '/goals/:path*',
+    '/learn/:path*',
+    '/settings/:path*',
+    '/market/:path*',
+    '/summary/:path*',
+    '/transactions/:path*',
   ],
 }
