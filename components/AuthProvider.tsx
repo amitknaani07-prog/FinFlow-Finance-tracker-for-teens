@@ -19,25 +19,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 
   useEffect(() => {
-    // Check active session once on mount and set user
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const initializeAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
       setLoading(false);
-    });
+    };
 
-    // Only redirect on genuine auth events (login / logout), not on every route change
+    initializeAuth();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      if (event === "SIGNED_IN") {
+      if (event === 'INITIAL_SESSION') {
+        setUser(session?.user ?? null);
+        setLoading(false);
+      } else if (event === "SIGNED_IN") {
+        setUser(session?.user ?? null);
         router.push("/dashboard");
       } else if (event === "SIGNED_OUT") {
+        setUser(null);
+        setLoading(false);
         router.push("/auth");
       }
     });
 
     return () => subscription.unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [router]);
 
   return (
     <AuthContext.Provider value={{ user, loading }}>
