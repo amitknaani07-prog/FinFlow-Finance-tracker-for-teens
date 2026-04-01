@@ -1,11 +1,17 @@
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 
-export const supabase = createBrowserClient(
+export const supabase: SupabaseClient = createClient(
   supabaseUrl || "https://placeholder-url.supabase.co",
-  supabaseAnonKey || "placeholder-anon-key"
+  supabaseAnonKey || "placeholder-anon-key",
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  }
 );
 
 export type Database = {

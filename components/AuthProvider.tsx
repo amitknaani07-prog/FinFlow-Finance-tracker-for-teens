@@ -17,28 +17,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-
   useEffect(() => {
-    const initializeAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
-    };
-
-    initializeAuth();
+    });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'INITIAL_SESSION') {
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
         setUser(session?.user ?? null);
-        setLoading(false);
-      } else if (event === "SIGNED_IN") {
-        setUser(session?.user ?? null);
-        router.push("/dashboard");
+        if (event === "SIGNED_IN" && session?.user) {
+          router.push("/dashboard");
+        }
       } else if (event === "SIGNED_OUT") {
         setUser(null);
-        setLoading(false);
         router.push("/auth");
       }
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();

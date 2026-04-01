@@ -21,13 +21,15 @@ export async function middleware(req: NextRequest) {
       },
     }
   )
-  let { data: { session } } = await supabase.auth.getSession()
 
-  if (!session) {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      session = { user, expires_at: Date.now() + 3600000 } as any
-    }
+  // Get session - try getSession first, fallback to getting user with token from cookies
+  const { data: { session }, error } = await supabase.auth.getSession()
+
+  // If no session from cookies, try to get user directly (validates token without session refresh)
+  let user = session?.user ?? null
+  if (!user && !error) {
+    const { data: { user: validUser } } = await supabase.auth.getUser()
+    user = validUser ?? null
   }
 
   const { pathname } = req.nextUrl
@@ -48,12 +50,12 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith(route)
   )
 
-  if (isProtectedRoute && !session) {
+  if (isProtectedRoute && !user) {
     return NextResponse.redirect(new URL('/', req.url))
   }
 
   const guestOnlyRoutes = ['/', '/auth']
-  if (guestOnlyRoutes.includes(pathname) && session) {
+  if (guestOnlyRoutes.includes(pathname) && user) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
