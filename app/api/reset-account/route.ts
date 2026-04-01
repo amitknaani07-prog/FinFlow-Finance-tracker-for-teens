@@ -10,7 +10,15 @@ export async function POST(request: NextRequest) {
   if (rateLimitResponse) return rateLimitResponse;
 
   try {
-    // Create a server client to read cookies from the request (same as auth/callback)
+    // Parse request body to get user ID
+    const body = await request.json();
+    const { userId } = body;
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+    }
+
+    // Create a server client to read cookies from the request
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -19,37 +27,26 @@ export async function POST(request: NextRequest) {
           getAll() {
             return request.cookies.getAll();
           },
-          set(name: string, value: string, options: CookieOptions) {
-             // Not needed for POST requests here
-          },
-          remove(name: string, options: CookieOptions) {
-             // Not needed for POST requests here
-          },
+          set(name: string, value: string, options: CookieOptions) {},
+          remove(name: string, options: CookieOptions) {},
         },
       }
     );
 
-    // Refresh session to ensure it's loaded
-    await supabase.auth.getSession();
+    // Get session to validate
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-    console.log("Session check:", session ? "Active" : "None", sessionError);
 
     if (sessionError || !session) {
       console.error('Session error:', sessionError);
-      console.log('Cookies received:', request.cookies.getAll());
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      console.error('Auth error:', authError);
-      console.log('Cookies received:', request.cookies.getAll());
+    // Verify the userId from body matches session user
+    const sessionUserId = session.user.id;
+    if (userId !== sessionUserId) {
+      console.error('User ID mismatch:', { body: userId, session: sessionUserId });
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const userId = user.id;
 
     // 1. Reset User Profile Stats
     const { error: userError } = await supabase

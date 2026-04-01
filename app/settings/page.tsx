@@ -70,6 +70,7 @@ export default function SettingsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ userId: user?.id }),
       });
       const data = await res.json();
 
