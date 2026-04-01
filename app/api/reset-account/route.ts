@@ -4,13 +4,11 @@ import type { NextRequest } from 'next/server';
 import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
-  // Rate Limiting: 5 requests per minute (safety limit)
   const rateLimitCheck = rateLimit(5, 60000);
   const rateLimitResponse = await rateLimitCheck(request as any);
   if (rateLimitResponse) return rateLimitResponse;
 
   try {
-    // Parse request body to get user ID
     const body = await request.json();
     const { userId } = body;
 
@@ -18,7 +16,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    // Create a server client to read cookies from the request
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -33,23 +30,20 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    // Get session to validate
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    // Verify user exists in database
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
 
-    if (sessionError || !session) {
-      console.error('Session error:', sessionError);
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Verify the userId from body matches session user
-    const sessionUserId = session.user.id;
-    if (userId !== sessionUserId) {
-      console.error('User ID mismatch:', { body: userId, session: sessionUserId });
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (userError || !user) {
+      console.error('User not found:', userId);
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // 1. Reset User Profile Stats
-    const { error: userError } = await supabase
+    const { error: userError2 } = await supabase
       .from('users')
       .update({
         money_score: 0,
@@ -58,7 +52,7 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', userId);
 
-    if (userError) throw userError;
+    if (userError2) throw userError2;
 
     // 2. Delete Transactions
     const { error: transError } = await supabase
