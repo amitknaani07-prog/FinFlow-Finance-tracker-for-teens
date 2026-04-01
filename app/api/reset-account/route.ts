@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Refresh session to ensure it's loaded
+    await supabase.auth.getSession();
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
     console.log("Session check:", session ? "Active" : "None", sessionError);
