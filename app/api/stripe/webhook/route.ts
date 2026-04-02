@@ -32,16 +32,28 @@ export async function POST(request: Request) {
         const userId = session.metadata?.userId;
         const subscriptionId = session.subscription as string;
 
+        console.log('[Stripe Webhook] checkout.session.completed - userId:', userId, 'subscriptionId:', subscriptionId);
+        console.log('[Stripe Webhook] supabaseAdmin available:', !!supabaseAdmin);
+
+        if (!supabaseAdmin) {
+          console.error('[Stripe Webhook] supabaseAdmin is null - check SUPABASE_SERVICE_ROLE_KEY');
+        }
+
         if (userId && supabaseAdmin) {
-          await supabaseAdmin.from('users').update({ is_pro: true }).eq('id', userId);
-          await supabaseAdmin.from('subscriptions').upsert({
+          const userResult = await supabaseAdmin.from('users').update({ is_pro: true }).eq('id', userId).select();
+          console.log('[Stripe Webhook] User update result:', userResult);
+
+          const subResult = await supabaseAdmin.from('subscriptions').upsert({
             user_id: userId,
             status: 'active',
             plan: 'pro',
             price: 2.99,
             started_at: new Date().toISOString(),
             stripe_subscription_id: subscriptionId,
-          }, { onConflict: 'user_id' });
+          }, { onConflict: 'user_id' }).select();
+          console.log('[Stripe Webhook] Subscription upsert result:', subResult);
+        } else {
+          console.error('[Stripe Webhook] Skipping DB update - userId:', userId, 'supabaseAdmin:', !!supabaseAdmin);
         }
         break;
       }
@@ -49,6 +61,12 @@ export async function POST(request: Request) {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         const userId = subscription.metadata?.userId;
+
+        console.log('[Stripe Webhook] customer.subscription.updated - userId:', userId, 'status:', subscription.status);
+
+        if (!supabaseAdmin) {
+          console.error('[Stripe Webhook] supabaseAdmin is null');
+        }
 
         if (userId && supabaseAdmin) {
           const status = subscription.status === 'active' ? 'active' : 
@@ -62,6 +80,7 @@ export async function POST(request: Request) {
           if (status === 'cancelled' || status === 'expired') {
             await supabaseAdmin.from('users').update({ is_pro: false }).eq('id', userId);
           }
+          console.log('[Stripe Webhook] Subscription updated to:', status);
         }
         break;
       }
@@ -70,11 +89,14 @@ export async function POST(request: Request) {
         const subscription = event.data.object as Stripe.Subscription;
         const userId = subscription.metadata?.userId;
 
+        console.log('[Stripe Webhook] customer.subscription.deleted - userId:', userId);
+
         if (userId && supabaseAdmin) {
           await supabaseAdmin.from('subscriptions')
             .update({ status: 'cancelled', expires_at: new Date().toISOString() })
             .eq('stripe_subscription_id', subscription.id);
           await supabaseAdmin.from('users').update({ is_pro: false }).eq('id', userId);
+          console.log('[Stripe Webhook] Subscription cancelled for user:', userId);
         }
         break;
       }

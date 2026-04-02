@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import { lessons } from '@/lib/lessons'
-import { CheckCircle2, ArrowLeft, Trophy, Sparkles, ArrowRight, Lock, Crown } from 'lucide-react'
+import { CheckCircle2, ArrowLeft, Trophy, Sparkles, ArrowRight, Lock, Crown, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 
@@ -19,6 +19,9 @@ export default function LessonPage({ params }: { params: { id: string } }) {
   const [quizFinished, setQuizFinished] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [earnedXp, setEarnedXp] = useState(0)
+  const [showResults, setShowResults] = useState(false)
+  const [allCorrect, setAllCorrect] = useState(false)
+  const [correctCount, setCorrectCount] = useState(0)
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
@@ -56,19 +59,32 @@ export default function LessonPage({ params }: { params: { id: string } }) {
     const newScores = [...quizScores]
     newScores[index] = answerIndex
     setQuizScores(newScores)
+    // Reset results when user changes an answer
+    if (showResults || allCorrect !== undefined) {
+      setShowResults(false)
+      setAllCorrect(false)
+      setCorrectCount(0)
+    }
   }
 
   const finishLesson = async () => {
     if (!user || !lesson || quizScores.includes(-1)) return
     setSubmitting(true)
 
+    // Calculate correct count
     let correctCount = 0
     lesson.quiz.forEach((q, i) => {
       if (q.correctIndex === quizScores[i]) correctCount++
     })
-
+    setCorrectCount(correctCount)
+    
+    // Determine if all answers are correct (for XP)
+    const allCorrect = correctCount === lesson.quiz.length
+    setAllCorrect(allCorrect)
+    
+    // Always save progress (completed if passed threshold)
     const passed = correctCount >= Math.ceil(lesson.quiz.length / 2)
-
+    
     await supabase.from('lesson_progress').upsert({
       user_id: user.id,
       lesson_id: lesson.id,
@@ -77,7 +93,8 @@ export default function LessonPage({ params }: { params: { id: string } }) {
       completed_at: new Date().toISOString()
     }, { onConflict: 'user_id,lesson_id' })
 
-    if (passed && !alreadyCompleted) {
+    // Only award XP if ALL questions correct and not already completed
+    if (allCorrect && !alreadyCompleted) {
       const xpToAward = lesson.isPro ? 20 : 10
       setEarnedXp(xpToAward)
 
@@ -100,7 +117,7 @@ export default function LessonPage({ params }: { params: { id: string } }) {
       })
     }
 
-    setQuizFinished(true)
+    setShowResults(true)
     setSubmitting(false)
   }
 
@@ -190,7 +207,81 @@ export default function LessonPage({ params }: { params: { id: string } }) {
     )
   }
 
-  if (quizFinished) {
+  {showResults && (
+    <div className="p-8 max-w-xl mx-auto flex flex-col items-center justify-center min-h-screen text-center space-y-6">
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+        className="w-24 h-24 bg-[#00C896]/20 text-[#00C896] rounded-full flex items-center justify-center"
+      >
+        {allCorrect ? <CheckCircle2 className="w-12 h-12" /> : <X className="w-12 h-12 text-[#FF6B6B]" />}
+      </motion.div>
+      <h2 className="text-3xl font-bold text-white">
+        {allCorrect ? 'Lesson Completed!' : 'Nice Try!'}
+      </h2>
+      
+      {/* Quiz Results Breakdown */}
+      <div className="space-y-4">
+        {lesson.quiz.map((q, i) => (
+          <div key={i} className="bg-surface border border-white/5 p-4 rounded-2xl">
+            <p className="text-white font-medium mb-3">{q.question}</p>
+            <div className="space-y-2">
+              {q.options.map((opt, idx) => {
+                const isCorrect = idx === q.correctIndex;
+                const isSelected = quizScores[i] === idx;
+                const isCorrectlySelected = isCorrect && isSelected;
+                const isIncorrectlySelected = !isCorrect && isSelected;
+                
+                return (
+                  <button 
+                    key={idx} 
+                    disabled={true} 
+                    className={`w-full text-left p-3 rounded-xl border text-sm transition-colors ` + 
+                      (isCorrectlySelected ? 'bg-[#00C896]/20 border-[#00C896] text-[#00C896] font-bold' : 
+                       isIncorrectlySelected ? 'bg-[#FF6B6B]/20 border-[#FF6B6B] text-[#FF6B6B] font-bold' :
+                       isCorrect ? 'bg-[#00C896]/10 border-[#00C896]/30 text-[#00C896]' : 
+                       'bg-[#0A0C10] border-white/5 text-gray-300')}
+                  >
+                    {opt}
+                    {isCorrect && !isSelected && (
+                      <span className="ml-2 text-xs text-[#00C896]">(Correct answer)</span>
+                    )}
+                    {isIncorrectlySelected && (
+                      <span className="ml-2 text-xs text-[#FF6B6B]">(Your answer)</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      <div className="flex items-center gap-2 bg-[#00C896]/10 border border-[#00C896]/30 rounded-xl px-4 py-2">
+        <Sparkles className="w-5 h-5 text-[#00C896]" />
+        <span className="text-white font-bold">+{earnedXp} XP awarded</span>
+      </div>
+      
+      {allCorrect && (
+        <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-2">
+          <span className="text-lg">{lesson.badgeEmoji}</span>
+          <span className="text-yellow-400 font-bold">{lesson.badge}</span>
+        </div>
+      )}
+      
+      <div className="flex gap-3 mt-4">
+        <button onClick={() => router.push('/learn')} className="bg-white text-black font-bold py-3 px-8 rounded-xl">Back to Library</button>
+        {lesson.id < lessons.length && (
+          <button onClick={() => router.push('/learn/' + (lesson.id + 1))} className={`bg-[#00C896] text-black font-bold py-3 px-8 rounded-xl flex items-center gap-2 ${!allCorrect ? 'opacity-50' : ''}`}>
+            Next Lesson <ArrowRight className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+    </div>
+  )}
+
+  if (!showResults && quizFinished) {
     return (
       <div className="p-8 max-w-xl mx-auto flex flex-col items-center justify-center min-h-screen text-center space-y-6">
         <motion.div

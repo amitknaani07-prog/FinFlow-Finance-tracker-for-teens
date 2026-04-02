@@ -27,13 +27,31 @@ function UpgradeContent() {
   }, [user])
 
   useEffect(() => {
-    if (searchParams.get('stripe') === 'success') {
+    if (searchParams.get('stripe') === 'success' && user) {
       setMessage('Payment successful! Activating Pro...')
-      setTimeout(() => router.push('/dashboard'), 2000)
+      fetch('/api/stripe/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.activated) {
+            setMessage('Pro activated! Welcome to FinFlow Pro.')
+            setTimeout(() => router.push('/dashboard'), 1500)
+          } else {
+            setMessage('Payment successful but activation pending. Please wait a moment or contact support.')
+            setTimeout(() => router.push('/dashboard'), 3000)
+          }
+        })
+        .catch(() => {
+          setMessage('Payment successful! Pro will be activated shortly.')
+          setTimeout(() => router.push('/dashboard'), 3000)
+        })
     } else if (searchParams.get('stripe') === 'cancelled') {
       setMessage('Payment was cancelled. You can try again anytime.')
     }
-  }, [searchParams])
+  }, [searchParams, user])
 
   const handleCheckout = async () => {
     if (!user) {
