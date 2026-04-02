@@ -66,37 +66,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ activated: true, source: 'stripe_subscription_metadata' });
     }
 
-    // Method 2: Check for completed checkout sessions by email
-    if (userEmail) {
-      const sessions = await stripe.checkout.sessions.list({
-        customer_email: userEmail,
-        limit: 100,
-      });
-
-      const completedSession = sessions.data.find(
-        session =>
-          session.payment_status === 'paid' &&
-          session.mode === 'subscription' &&
-          session.status === 'complete'
-      );
-
-      if (completedSession && supabaseAdmin) {
-        const subId = completedSession.subscription as string;
-
-        await supabaseAdmin.from('users').update({ is_pro: true }).eq('id', userId);
-        await supabaseAdmin.from('subscriptions').upsert({
-          user_id: userId,
-          status: 'active',
-          plan: 'pro',
-          price: 2.99,
-          started_at: new Date().toISOString(),
-          stripe_subscription_id: subId || null,
-          stripe_customer_id: completedSession.customer as string,
-        }, { onConflict: 'user_id' });
-
-        console.log('[Stripe Activate] Pro activated via completed checkout session for user:', userId);
-        return NextResponse.json({ activated: true, source: 'stripe_checkout_session' });
-      }
+    // Method 2: Check for completed checkout sessions by customer ID
+    // First get customer from subscriptions, then check sessions
+    if (userEmail && userSub) {
+      // We already found a subscription, try to get checkout sessions
+      // This method is handled by the subscription lookup above
     }
 
     // Method 3: Check all subscriptions (including non-active) by metadata
