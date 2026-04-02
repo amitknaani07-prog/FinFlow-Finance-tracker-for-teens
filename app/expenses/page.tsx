@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/utils";
 import { Minus, CheckCircle2, ArrowLeft } from "lucide-react";
 import { awardPoints } from "@/lib/points";
+import { updateStreak } from "@/lib/streak";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { useRouter } from "next/navigation";

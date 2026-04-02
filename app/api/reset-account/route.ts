@@ -9,7 +9,6 @@ export async function POST(request: NextRequest) {
   if (rateLimitResponse) return rateLimitResponse;
 
   try {
-    // Check if admin client is configured
     if (!supabaseAdmin) {
       console.error('SUPABASE_SERVICE_ROLE_KEY not configured');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
@@ -22,10 +21,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    // Verify user exists in database using admin client (bypasses RLS)
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
-      .select('id')
+      .select('id, is_pro, total_xp, streak_freeze_count')
       .eq('id', userId)
       .single();
 
@@ -34,13 +32,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // 1. Reset User Profile Stats
+    // Preserve Pro-related fields
+    const preserveTotalXp = user.total_xp || 0;
+    const preserveFreezeCount = user.streak_freeze_count || 0;
+
+    // 1. Reset User Profile Stats (preserve Pro fields)
     const { error: userError2 } = await supabaseAdmin
       .from('users')
       .update({
         money_score: 0,
         streak: 0,
         last_log_date: null,
+        // DO NOT reset: is_pro, total_xp, streak_freeze_count
       })
       .eq('id', userId);
 
@@ -78,7 +81,14 @@ export async function POST(request: NextRequest) {
 
     if (notifError) throw notifError;
 
-    return NextResponse.json({ success: true, message: 'Account reset successfully' });
+    // 6. DO NOT delete subscriptions - preserve Pro status
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Account reset successfully',
+      preservedPro: user.is_pro,
+      preservedXp: preserveTotalXp
+    });
   } catch (error) {
     console.error('Error resetting account:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

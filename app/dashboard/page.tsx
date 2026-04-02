@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/utils";
-import { ArrowUpRight, ArrowDownRight, Trophy, Plus, Search, Bell, Mic, Sparkles, Zap, Activity, Eye, EyeOff, Globe, LineChart, BarChart3, TrendingUp, DollarSign, BookOpen, Menu } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Trophy, Plus, Search, Bell, Mic, Sparkles, Zap, Activity, Eye, EyeOff, Globe, LineChart, BarChart3, TrendingUp, DollarSign, BookOpen, Menu, Users, FileText, Download, Award } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,9 @@ import BrandLogo from "@/components/BrandLogo";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { useNavigation } from "@/components/NavigationProvider";
 import { awardPoints } from "@/lib/points";
+import UpgradeModal from "@/components/UpgradeModal";
+import StreakWidget from "@/components/StreakWidget";
+import ProBadge from "@/components/ProBadge";
 
 
 export default function DashboardPage() {
@@ -28,6 +31,9 @@ export default function DashboardPage() {
   
   const { currency, setCurrency, convert } = useCurrency();
   const [milestoneCelebration, setMilestoneCelebration] = useState<number | null>(null);
+  const [isPro, setIsPro] = useState(false);
+  const [proExpired, setProExpired] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   
   // Interaction states
   const [showNotifs, setShowNotifs] = useState(false);
@@ -59,6 +65,22 @@ export default function DashboardPage() {
       }
 
       setProfile(userData);
+      setIsPro(userData.is_pro || false);
+
+      if (userData.is_pro) {
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('status, expires_at')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .single()
+
+        if (sub?.expires_at && new Date(sub.expires_at) < new Date()) {
+          setProExpired(true)
+          await supabase.from('users').update({ is_pro: false }).eq('id', user.id)
+          setIsPro(false)
+        }
+      }
 
       // Fetch Recent Transactions
       const { data: txData } = await supabase
@@ -213,12 +235,15 @@ export default function DashboardPage() {
                <Menu className="w-5 h-5" />
              </button>
              <BrandLogo size="sm" showGlow={false} href="/" className="hidden md:block" />
-            <div className="flex items-center gap-4 cursor-pointer group" onClick={() => setShowScoreInfo(!showScoreInfo)}>
-             <div className="w-12 h-12 rounded-full bg-surfaceGlass backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg hover:shadow-glow-purple transition-all duration-300 group-hover:bg-purpleAccent/10 group-hover:border-purpleAccent/50">
-                <span className="font-bold text-lg text-white">{(profile?.name || "U")[0].toUpperCase()}</span>
-             </div>
-             <div>
-                <p className="text-[10px] text-purpleAccent uppercase tracking-[0.2em] font-black flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">Money Score <Trophy className="w-3 h-3"/></p>
+             <div className="flex items-center gap-4 cursor-pointer group" onClick={() => setShowScoreInfo(!showScoreInfo)}>
+              <div className="w-12 h-12 rounded-full bg-surfaceGlass backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg hover:shadow-glow-purple transition-all duration-300 group-hover:bg-purpleAccent/10 group-hover:border-purpleAccent/50">
+                 <span className="font-bold text-lg text-white">{(profile?.name || "U")[0].toUpperCase()}</span>
+              </div>
+              <div>
+                 <div className="flex items-center gap-2">
+                   <p className="text-[10px] text-purpleAccent uppercase tracking-[0.2em] font-black flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">Money Score <Trophy className="w-3 h-3"/></p>
+                   {isPro && <ProBadge />}
+                 </div>
                 <div className="flex items-baseline gap-1 mt-0.5">
                   <p className="text-white font-black text-xl leading-none tracking-tight">{score}</p>
                   <span className="text-white/40 font-bold text-xs uppercase">Pts</span>
@@ -333,6 +358,25 @@ export default function DashboardPage() {
              </button>
           ))}
        </div>
+
+       {proExpired && (
+         <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-center gap-3 mb-4">
+           <span className="text-xl">⚠️</span>
+           <div className="flex-1">
+             <p className="text-white font-semibold text-sm">Your Pro subscription expired</p>
+             <p className="text-gray-400 text-xs">Renew to keep your streak freeze and full leaderboard access.</p>
+           </div>
+           <Link href="/upgrade" className="bg-[#00C896] text-black font-bold text-xs px-4 py-2 rounded-lg hover:bg-[#00b085] transition-colors whitespace-nowrap">
+             Renew
+           </Link>
+         </div>
+       )}
+
+       {isPro && (
+         <div className="mb-4">
+           <StreakWidget />
+         </div>
+       )}
 
        {/* MODULAR BENTO GRID */}
        <motion.div 
@@ -572,6 +616,131 @@ export default function DashboardPage() {
                ))}
             </div>
          </motion.div>
+
+
+
+          {/* UPGRADE TO PRO CTA - FREE USERS ONLY */}
+          {!isPro && (
+            <motion.div 
+              variants={itemVars} 
+              onClick={() => router.push('/upgrade')}
+              className="col-span-1 md:col-span-12 lg:col-span-12 relative p-6 md:p-8 rounded-[38px] overflow-hidden bg-gradient-to-r from-[#00C896]/10 via-[#00C896]/5 to-purpleAccent/10 backdrop-blur-3xl border border-[#00C896]/20 group shadow-2xl hover:border-[#00C896]/40 transition-all duration-700 flex flex-col md:flex-row items-center justify-between gap-6 min-h-[10rem] cursor-pointer"
+            >
+               <div className="absolute top-0 right-0 w-[50%] h-[100%] bg-[#00C896]/10 rounded-full blur-[80px] pointer-events-none" />
+               <div className="flex items-center gap-4 z-10 relative">
+                  <div className="w-16 h-16 rounded-2xl bg-[#00C896]/20 border border-[#00C896]/30 flex items-center justify-center shadow-glow-green">
+                     <span className="text-3xl">👑</span>
+                  </div>
+                  <div>
+                     <h3 className="text-2xl font-bold text-white tracking-wide">Unlock FinFlow Pro</h3>
+                     <p className="text-sm text-white/60 font-medium mt-1">43 lessons, analytics, streaks, friends, and more — just .99/month</p>
+                  </div>
+               </div>
+               <button className="z-10 relative bg-[#00C896] text-black font-bold px-8 py-4 rounded-2xl hover:bg-[#00b085] transition-colors text-lg shadow-[0_0_30px_rgba(0,200,150,0.3)] whitespace-nowrap">
+                  Upgrade Now
+               </button>
+            </motion.div>
+          )}
+
+          {/* PRO FEATURES SECTION */}
+          {isPro && (
+            <>
+              <motion.div 
+                variants={itemVars} 
+                onClick={() => router.push('/analytics')}
+                className="col-span-1 md:col-span-6 lg:col-span-3 p-6 rounded-[38px] bg-gradient-to-br from-[#00C896]/10 to-surfaceGlass backdrop-blur-3xl border border-[#00C896]/20 hover:border-[#00C896]/40 transition-all duration-500 group cursor-pointer flex flex-col justify-between relative overflow-hidden min-h-[14rem] shadow-xl"
+              >
+                 <div className="absolute top-0 right-0 w-[80%] h-[80%] bg-[#00C896]/5 rounded-full blur-[50px] pointer-events-none group-hover:bg-[#00C896]/15 transition-all duration-1000" />
+                 <div className="flex justify-between items-start mb-4 z-10 relative">
+                    <div>
+                       <div className="flex items-center gap-2 mb-1">
+                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#00C896]">Pro Feature</p>
+                         <span className="text-[8px]">👑</span>
+                       </div>
+                       <h3 className="text-white font-bold text-lg tracking-wide">Analytics</h3>
+                    </div>
+                    <BarChart3 className="w-6 h-6 text-[#00C896]/80" />
+                 </div>
+                 <div className="mt-auto z-10">
+                    <p className="text-xs text-white/60 font-medium">5 charts, goal projector, spending trends</p>
+                 </div>
+              </motion.div>
+
+              <motion.div 
+                variants={itemVars} 
+                onClick={() => router.push('/friends')}
+                className="col-span-1 md:col-span-6 lg:col-span-3 p-6 rounded-[38px] bg-gradient-to-br from-blue-500/10 to-surfaceGlass backdrop-blur-3xl border border-blue-500/20 hover:border-blue-500/40 transition-all duration-500 group cursor-pointer flex flex-col justify-between relative overflow-hidden min-h-[14rem] shadow-xl"
+              >
+                 <div className="absolute top-0 right-0 w-[80%] h-[80%] bg-blue-500/5 rounded-full blur-[50px] pointer-events-none group-hover:bg-blue-500/15 transition-all duration-1000" />
+                 <div className="flex justify-between items-start mb-4 z-10 relative">
+                    <div>
+                       <div className="flex items-center gap-2 mb-1">
+                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Pro Feature</p>
+                         <span className="text-[8px]">👑</span>
+                       </div>
+                       <h3 className="text-white font-bold text-lg tracking-wide">Friends</h3>
+                    </div>
+                    <Users className="w-6 h-6 text-blue-400/80" />
+                 </div>
+                 <div className="mt-auto z-10">
+                    <p className="text-xs text-white/60 font-medium">Challenges, goals, and competition</p>
+                 </div>
+              </motion.div>
+
+              <motion.div 
+                variants={itemVars} 
+                onClick={() => router.push('/tax-calculator')}
+                className="col-span-1 md:col-span-6 lg:col-span-3 p-6 rounded-[38px] bg-gradient-to-br from-yellow-500/10 to-surfaceGlass backdrop-blur-3xl border border-yellow-500/20 hover:border-yellow-500/40 transition-all duration-500 group cursor-pointer flex flex-col justify-between relative overflow-hidden min-h-[14rem] shadow-xl"
+              >
+                 <div className="absolute top-0 right-0 w-[80%] h-[80%] bg-yellow-500/5 rounded-full blur-[50px] pointer-events-none group-hover:bg-yellow-500/15 transition-all duration-1000" />
+                 <div className="flex justify-between items-start mb-4 z-10 relative">
+                    <div>
+                       <div className="flex items-center gap-2 mb-1">
+                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-400">Pro Feature</p>
+                         <span className="text-[8px]">👑</span>
+                       </div>
+                       <h3 className="text-white font-bold text-lg tracking-wide">Tax Calculator</h3>
+                    </div>
+                    <FileText className="w-6 h-6 text-yellow-400/80" />
+                 </div>
+                 <div className="mt-auto z-10">
+                    <p className="text-xs text-white/60 font-medium">US, UK, Israel support</p>
+                 </div>
+              </motion.div>
+
+              <motion.div 
+                variants={itemVars} 
+                onClick={() => {
+                  const now = new Date()
+                  const month = now.toLocaleString('default', { month: 'long' }).toLowerCase()
+                  const year = now.getFullYear()
+                  fetch('/api/export-csv?month=' + month + '&year=' + year).then(r => r.blob()).then(blob => {
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = 'finflow-' + month + '-' + year + '.csv'
+                    a.click()
+                  }).catch(() => router.push('/settings'))
+                }}
+                className="col-span-1 md:col-span-6 lg:col-span-3 p-6 rounded-[38px] bg-gradient-to-br from-purple-500/10 to-surfaceGlass backdrop-blur-3xl border border-purple-500/20 hover:border-purple-500/40 transition-all duration-500 group cursor-pointer flex flex-col justify-between relative overflow-hidden min-h-[14rem] shadow-xl"
+              >
+                 <div className="absolute top-0 right-0 w-[80%] h-[80%] bg-purple-500/5 rounded-full blur-[50px] pointer-events-none group-hover:bg-purple-500/15 transition-all duration-1000" />
+                 <div className="flex justify-between items-start mb-4 z-10 relative">
+                    <div>
+                       <div className="flex items-center gap-2 mb-1">
+                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-400">Pro Feature</p>
+                         <span className="text-[8px]">👑</span>
+                       </div>
+                       <h3 className="text-white font-bold text-lg tracking-wide">Export Data</h3>
+                    </div>
+                    <Download className="w-6 h-6 text-purple-400/80" />
+                 </div>
+                 <div className="mt-auto z-10">
+                    <p className="text-xs text-white/60 font-medium">Download transactions as CSV</p>
+                 </div>
+              </motion.div>
+            </>
+          )}
 
          {/* 5. RECENT ACTIVITY & SINGULARITY ACTION */}
          <motion.div variants={itemVars} className="col-span-1 md:col-span-12 lg:col-span-12 p-6 md:p-10 rounded-[38px] bg-white/[0.03] backdrop-blur-[40px] border border-white/5 mt-2 lg:mt-4 shadow-[0_30px_60px_rgba(0,0,0,0.6)] relative overflow-hidden">

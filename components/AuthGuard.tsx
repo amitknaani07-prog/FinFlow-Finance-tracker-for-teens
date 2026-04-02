@@ -10,7 +10,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   // Public routes that don't require authentication
-  const publicRoutes = ["/", "/auth", "/onboarding"];
+  const publicRoutes = ["/", "/auth", "/onboarding", "/upgrade"];
 
   useEffect(() => {
     if (loading) return;

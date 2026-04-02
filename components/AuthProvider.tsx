@@ -24,11 +24,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+      if (event === "SIGNED_IN" && session?.user) {
         setUser(session?.user ?? null);
-        if (event === "SIGNED_IN" && session?.user) {
+        // Only redirect to dashboard if coming from auth page
+        const fromAuth = document.referrer.includes("/auth");
+        if (fromAuth) {
           router.push("/dashboard");
         }
+      } else if (event === "INITIAL_SESSION") {
+        setUser(session?.user ?? null);
       } else if (event === "SIGNED_OUT") {
         setUser(null);
         router.push("/auth");

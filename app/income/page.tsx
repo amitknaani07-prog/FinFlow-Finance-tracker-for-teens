@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/utils";
 import { Plus, CheckCircle2, Target, Sparkles, ArrowLeft } from "lucide-react";
 import { awardPoints } from "@/lib/points";
+import { updateStreak } from "@/lib/streak";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { useRouter } from "next/navigation";
@@ -159,6 +160,9 @@ export default function IncomePage() {
         await Promise.all(updates);
       }
     }
+
+    // 2.5. Update streak
+    await updateStreak(user?.id || "");
 
     // 3. Award points
     const res = await awardPoints(user?.id || "", 2);

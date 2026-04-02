@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, TrendingUp, Zap, DollarSign, Calendar, Percent } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useCurrency } from "@/components/CurrencyProvider";
+import ProGate from "@/components/ProGate";
 import {
   AreaChart,
   Area,
@@ -19,6 +20,14 @@ import {
 } from "recharts";
 
 export default function CalculatorPage() {
+  return (
+    <ProGate>
+      <CalculatorContent />
+    </ProGate>
+  )
+}
+
+function CalculatorContent() {
   const router = useRouter();
   const { currency, convert } = useCurrency();
   const [principal, setPrincipal] = useState(1000);
@@ -349,5 +358,5 @@ export default function CalculatorPage() {
         </motion.div>
       </div>
     </div>
-  );
+  )
 }

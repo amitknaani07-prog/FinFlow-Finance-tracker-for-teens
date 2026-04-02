@@ -3,8 +3,11 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
-import { LogOut, Save, Moon, User as UserIcon, ArrowLeft, RefreshCw, AlertTriangle } from "lucide-react";
+import { LogOut, Save, Moon, User as UserIcon, ArrowLeft, RefreshCw, AlertTriangle, Crown, Download } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { exportToCSV } from "@/lib/exportCSV";
+import ProBadge from "@/components/ProBadge";
+import Link from "next/link";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -17,6 +20,8 @@ export default function SettingsPage() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
   const [resetSuccess, setResetSuccess] = useState(false);
+  const [isPro, setIsPro] = useState(false);
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   // Ensure loading state is properly handled for auth
   const [pageLoading, setPageLoading] = useState(true);
@@ -33,8 +38,12 @@ export default function SettingsPage() {
         if (data) {
           setProfile(data);
           setName(data.name);
+          setIsPro(data.is_pro || false);
         }
         setPageLoading(false);
+      });
+      supabase.from("transactions").select("*").eq("user_id", user.id).order("date", { ascending: false }).then(({ data }) => {
+        if (data) setTransactions(data);
       });
     }
   }, [user]);
@@ -82,7 +91,10 @@ export default function SettingsPage() {
       setShowResetConfirm(false);
       // Refresh the profile to show 0 score
       const { data: updatedProfile } = await supabase.from("users").select("*").eq("id", user?.id).single();
-      if (updatedProfile) setProfile(updatedProfile);
+      if (updatedProfile) {
+        setProfile(updatedProfile);
+        setIsPro(updatedProfile.is_pro || false);
+      }
       
       // Clear localStorage milestone
       if (user?.id) {
@@ -132,10 +144,34 @@ export default function SettingsPage() {
             </div>
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">{profile?.name || "Loading..."}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold text-white">{profile?.name || "Loading..."}</h2>
+              {isPro && <ProBadge size="md" />}
+            </div>
             <p className="text-textMuted text-sm">{user?.email}</p>
           </div>
         </div>
+
+        {isPro && (
+          <div className="bg-gradient-to-r from-yellow-500/10 to-yellow-600/10 border border-yellow-500/30 rounded-2xl p-4 flex items-center gap-3">
+            <Crown className="w-6 h-6 text-yellow-400" />
+            <div>
+              <p className="text-white font-semibold text-sm">FinFlow Pro Member</p>
+              <p className="text-gray-400 text-xs">All Pro features unlocked. $2.99/month</p>
+            </div>
+          </div>
+        )}
+
+        {!isPro && (
+          <Link href="/upgrade" className="block bg-[#00C896]/10 border border-[#00C896]/30 rounded-2xl p-4 flex items-center gap-3 hover:bg-[#00C896]/20 transition-colors">
+            <Crown className="w-6 h-6 text-[#00C896]" />
+            <div className="flex-1">
+              <p className="text-white font-semibold text-sm">Upgrade to Pro</p>
+              <p className="text-gray-400 text-xs">Unlock 43 lessons, analytics, and more</p>
+            </div>
+            <span className="text-[#00C896] font-bold text-sm">$2.99/mo →</span>
+          </Link>
+        )}
 
         <hr className="border-white/5" />
 
@@ -177,6 +213,25 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+
+        <hr className="border-white/5" />
+
+        {isPro && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Pro Features</h3>
+            <button
+              onClick={() => {
+                const now = new Date()
+                const month = now.toLocaleString('default', { month: 'long' }).toLowerCase()
+                const year = now.getFullYear()
+                exportToCSV(transactions, `finflow-all-transactions-${month}-${year}.csv`)
+              }}
+              className="w-full flex items-center justify-center gap-2 bg-[#00C896]/10 hover:bg-[#00C896]/20 text-[#00C896] border border-[#00C896]/20 py-3 rounded-xl transition-colors font-medium"
+            >
+              <Download className="w-4 h-4" /> Export All Transactions (CSV)
+            </button>
+          </div>
+        )}
 
         <hr className="border-white/5" />
 
