@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-const stripeKey = process.env.STRIPE_SECRET_KEY || '';
-const stripe = stripeKey ? new Stripe(stripeKey, {
-  apiVersion: '2025-04-02.basil' as any,
-});
-
 export async function POST(request: Request) {
-  if (!stripe) {
-    return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) {
+    return NextResponse.json({ error: 'Stripe not configured' }, { status: 503 });
   }
+
+  const stripe = new Stripe(stripeKey, {
+    apiVersion: '2024-12-18.acacia' as any,
+  });
+
   try {
     const body = await request.json();
     const { userId, userEmail } = body;
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
               name: 'FinFlow Pro',
               description: 'All 43 lessons, advanced analytics, streak tracking, and more',
             },
-            unit_amount: 299, // .99
+            unit_amount: 299,
             recurring: {
               interval: 'month',
             },
