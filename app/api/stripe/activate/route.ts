@@ -14,12 +14,15 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { userId } = body;
+    const { userId, userEmail } = body;
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
+    console.log('[Stripe Activate] Activation request for userId:', userId, 'email:', userEmail);
+
+    // Check if user already has active subscription in DB
     if (supabaseAdmin) {
       const { data: existingSub } = await supabaseAdmin
         .from('subscriptions')
@@ -29,10 +32,14 @@ export async function POST(request: Request) {
         .single();
 
       if (existingSub) {
+        console.log('[Stripe Activate] User already has active subscription in DB:', userId);
         return NextResponse.json({ activated: true, source: 'database' });
       }
+    } else {
+      console.error('[Stripe Activate] supabaseAdmin is null - check SUPABASE_SERVICE_ROLE_KEY');
     }
 
+    // Method 1: Check Stripe for active subscriptions with userId in metadata
     const subscriptions = await stripe.subscriptions.list({
       status: 'active',
       limit: 100,
@@ -55,13 +62,77 @@ export async function POST(request: Request) {
         expires_at: new Date((userSub as any).current_period_end * 1000).toISOString(),
       }, { onConflict: 'user_id' });
 
-      console.log('[Stripe Activate] Pro activated for user:', userId);
-      return NextResponse.json({ activated: true, source: 'stripe_api' });
+      console.log('[Stripe Activate] Pro activated via subscription metadata for user:', userId);
+      return NextResponse.json({ activated: true, source: 'stripe_subscription_metadata' });
     }
 
-    return NextResponse.json({ activated: false, message: 'No active subscription found' });
+    // Method 2: Check for completed checkout sessions by email
+    if (userEmail) {
+      const sessions = await stripe.checkout.sessions.list({
+        customer_email: userEmail,
+        limit: 100,
+      });
+
+      const completedSession = sessions.data.find(
+        session =>
+          session.payment_status === 'paid' &&
+          session.mode === 'subscription' &&
+          session.status === 'complete'
+      );
+
+      if (completedSession && supabaseAdmin) {
+        const subId = completedSession.subscription as string;
+
+        await supabaseAdmin.from('users').update({ is_pro: true }).eq('id', userId);
+        await supabaseAdmin.from('subscriptions').upsert({
+          user_id: userId,
+          status: 'active',
+          plan: 'pro',
+          price: 2.99,
+          started_at: new Date().toISOString(),
+          stripe_subscription_id: subId || null,
+          stripe_customer_id: completedSession.customer as string,
+        }, { onConflict: 'user_id' });
+
+        console.log('[Stripe Activate] Pro activated via completed checkout session for user:', userId);
+        return NextResponse.json({ activated: true, source: 'stripe_checkout_session' });
+      }
+    }
+
+    // Method 3: Check all subscriptions (including non-active) by metadata
+    const allSubscriptions = await stripe.subscriptions.list({
+      limit: 100,
+    });
+
+    const anyUserSub = allSubscriptions.data.find(
+      sub => sub.metadata?.userId === userId
+    );
+
+    if (anyUserSub && supabaseAdmin) {
+      await supabaseAdmin.from('users').update({ is_pro: true }).eq('id', userId);
+      await supabaseAdmin.from('subscriptions').upsert({
+        user_id: userId,
+        status: 'active',
+        plan: 'pro',
+        price: 2.99,
+        started_at: new Date().toISOString(),
+        stripe_subscription_id: anyUserSub.id,
+        stripe_customer_id: anyUserSub.customer as string,
+        expires_at: new Date((anyUserSub as any).current_period_end * 1000).toISOString(),
+      }, { onConflict: 'user_id' });
+
+      console.log('[Stripe Activate] Pro activated via any subscription record for user:', userId);
+      return NextResponse.json({ activated: true, source: 'stripe_any_subscription' });
+    }
+
+    console.log('[Stripe Activate] No active subscription found for user:', userId, 'email:', userEmail);
+    return NextResponse.json({
+      activated: false,
+      message: 'No active subscription found. Webhook may not have fired yet.'
+    });
   } catch (error: any) {
     console.error('[Stripe Activate] Error:', error.message);
+    console.error('[Stripe Activate] Stack:', error.stack);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

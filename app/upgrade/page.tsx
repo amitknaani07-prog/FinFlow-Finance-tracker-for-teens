@@ -32,7 +32,7 @@ function UpgradeContent() {
       fetch('/api/stripe/activate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({ userId: user.id, userEmail: user.email }),
       })
         .then(res => res.json())
         .then(data => {
